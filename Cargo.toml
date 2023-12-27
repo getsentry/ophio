@@ -1,0 +1,17 @@
+[package]
+name = "sentry-ophio"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "sentry_ophio"
+crate-type = ["cdylib"]
+
+[dependencies]
+proguard = { version = "5.4.0", features = ["uuid"] }
+pyo3 = { version = "0.20.0", features = [
+    "extension-module",
+    "serde",
+    "abi3-py38",
+] }
+symbolic = { version = "12.8.0", features = [] }
