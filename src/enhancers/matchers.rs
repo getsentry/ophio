@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use globset::GlobBuilder;
-use regex::{Regex, RegexBuilder};
+use regex::bytes::{Regex, RegexBuilder};
 use smol_str::SmolStr;
 
 pub struct Frame {
@@ -159,7 +159,7 @@ impl SimpleFieldMatcher for FrameFieldMatch {
         self.field
     }
     fn matches_value(&self, value: &str) -> bool {
-        self.pattern.is_match(value)
+        self.pattern.is_match(value.as_bytes())
     }
 }
 
@@ -177,12 +177,12 @@ impl SimpleFieldMatcher for PathLikeMatch {
         // normalize path:
         let mut value = value.replace('\\', "/");
 
-        if self.pattern.is_match(&value) {
+        if self.pattern.is_match(value.as_bytes()) {
             return true;
         }
         if !value.starts_with('/') {
             value.insert(0, '/');
-            return self.pattern.is_match(&value);
+            return self.pattern.is_match(value.as_bytes());
         }
         false
     }
