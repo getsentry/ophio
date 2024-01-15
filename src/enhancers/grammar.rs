@@ -43,28 +43,30 @@ _        = space*
 
 use smol_str::SmolStr;
 
+pub use nom::parse_enhancers;
+
 #[derive(Debug)]
-struct RawMatcher {
-    negation: bool,
-    ty: SmolStr,
-    argument: SmolStr,
+pub struct RawMatcher {
+    pub negation: bool,
+    pub ty: SmolStr,
+    pub argument: SmolStr,
 }
 
 #[derive(Debug)]
-struct RawMatchers {
-    caller_matcher: Option<RawMatcher>,
-    matchers: Vec<RawMatcher>,
-    callee_matcher: Option<RawMatcher>,
+pub struct RawMatchers {
+    pub caller_matcher: Option<RawMatcher>,
+    pub matchers: Vec<RawMatcher>,
+    pub callee_matcher: Option<RawMatcher>,
 }
 #[derive(Debug)]
-enum RawAction {
+pub enum RawAction {
     Var(SmolStr, SmolStr),
     Flag(Option<char>, char, SmolStr),
 }
 #[derive(Debug)]
-pub struct Rule {
-    matchers: RawMatchers,
-    actions: Vec<RawAction>,
+pub struct RawRule {
+    pub matchers: RawMatchers,
+    pub actions: Vec<RawAction>,
 }
 
 mod nom {
@@ -76,7 +78,7 @@ mod nom {
     use nom::sequence::{delimited, pair, preceded, tuple};
     use nom::{Finish, IResult, Parser};
 
-    use super::{RawAction, RawMatcher, RawMatchers, Rule};
+    use super::{RawAction, RawMatcher, RawMatchers, RawRule};
 
     fn ident(input: &str) -> IResult<&str, &str> {
         take_while1(|c: char| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-'))(input)
@@ -94,7 +96,7 @@ mod nom {
             take_while1(|c: char| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | ':' | '-')),
             char('"'),
         );
-        let matcher_type = alt((quoted_ident, ident));
+        let matcher_type = alt((ident, quoted_ident));
 
         let unquoted = take_while1(|c: char| !c.is_ascii_whitespace());
         // let quoted = delimited(
@@ -189,20 +191,20 @@ mod nom {
         Ok((input, actions))
     }
 
-    fn rule(input: &str) -> anyhow::Result<Rule> {
+    fn rule(input: &str) -> anyhow::Result<RawRule> {
         let (_input, (matchers, actions)) = all_consuming(pair(matchers, actions))(input)
             .finish()
             .map_err(|e| anyhow::Error::msg(e.to_string()))?;
 
-        Ok(Rule { matchers, actions })
+        Ok(RawRule { matchers, actions })
     }
 
-    pub fn parse_enhancers(input: &str) -> anyhow::Result<Vec<Rule>> {
+    pub fn parse_enhancers(input: &str) -> anyhow::Result<Vec<RawRule>> {
         let mut rules = vec![];
 
         for line in input.lines() {
             let line = line.trim();
-            if line.starts_with('#') {
+            if line.is_empty() || line.starts_with('#') {
                 continue;
             }
             let rule = rule(line)?;
@@ -216,7 +218,7 @@ mod nom {
 mod chumsky {
     use chumsky::prelude::*;
 
-    use super::{RawAction, RawMatchers, Rule};
+    use super::{RawAction, RawMatchers, RawRule};
 
     fn ident() -> impl Parser<char, String, Error = Simple<char>> {
         filter(|c: &char| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-'))
@@ -232,7 +234,7 @@ mod chumsky {
                 .at_least(1)
                 .collect()
                 .delimited_by(just('"'), just('"'));
-        let matcher_type = quoted_ident.or(ident());
+        let matcher_type = ident().or(quoted_ident);
 
         let unquoted = filter(|c: &char| !c.is_ascii_whitespace())
             .repeated()
@@ -302,16 +304,16 @@ mod chumsky {
             .at_least(1)
     }
 
-    fn rule(input: &str) -> anyhow::Result<Rule> {
+    fn rule(input: &str) -> anyhow::Result<RawRule> {
         let (matchers, actions) = matchers()
             .then(actions())
             .parse(input)
             .map_err(|e| anyhow::Error::msg(e.first().unwrap().to_string()))?;
 
-        Ok(Rule { matchers, actions })
+        Ok(RawRule { matchers, actions })
     }
 
-    pub fn parse_enhancers(input: &str) -> anyhow::Result<Vec<Rule>> {
+    pub fn parse_enhancers(input: &str) -> anyhow::Result<Vec<RawRule>> {
         let mut rules = vec![];
 
         for line in input.lines() {
