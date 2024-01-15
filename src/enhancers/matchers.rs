@@ -88,14 +88,14 @@ pub fn get_matcher(
         // Path matchers
         "stack.abs_path" | "path" => Arc::new(SimpleFieldMatch {
             negated,
-            matcher: FrameFieldMatch {
+            matcher: PathLikeMatch {
                 field: "path",
                 pattern: translate_pattern(argument, true)?,
             },
         }),
         "stack.package" | "package" => Arc::new(SimpleFieldMatch {
             negated,
-            matcher: FrameFieldMatch {
+            matcher: PathLikeMatch {
                 field: "package",
                 pattern: translate_pattern(argument, true)?,
             },
