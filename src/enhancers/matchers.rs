@@ -61,64 +61,33 @@ pub fn get_matcher(
     argument: &str,
 ) -> anyhow::Result<Arc<dyn Matcher>> {
     // TODO: cache based on (negated, matcher_type, argument)
-    Ok(match matcher_type {
+    let matcher = match matcher_type {
         // Field matchers
-        "stack.module" | "module" => Arc::new(SimpleFieldMatch {
-            negated,
-            matcher: FrameFieldMatch {
-                field: "module",
-                pattern: translate_pattern(argument, false)?,
-            },
-        }),
-        "stack.function" | "function" => Arc::new(SimpleFieldMatch {
-            negated,
-            matcher: FrameFieldMatch {
-                field: "function",
-                pattern: translate_pattern(argument, false)?,
-            },
-        }),
-        "category" => Arc::new(SimpleFieldMatch {
-            negated,
-            matcher: FrameFieldMatch {
-                field: "category",
-                pattern: translate_pattern(argument, false)?,
-            },
-        }),
+        "stack.module" | "module" => negate(negated, FrameFieldMatch::new("module", argument)?),
+        "stack.function" | "function" => {
+            negate(negated, FrameFieldMatch::new("function", argument)?)
+        }
+        "category" => negate(negated, FrameFieldMatch::new("category", argument)?),
 
         // Path matchers
-        "stack.abs_path" | "path" => Arc::new(SimpleFieldMatch {
-            negated,
-            matcher: PathLikeMatch {
-                field: "path",
-                pattern: translate_pattern(argument, true)?,
-            },
-        }),
-        "stack.package" | "package" => Arc::new(SimpleFieldMatch {
-            negated,
-            matcher: PathLikeMatch {
-                field: "package",
-                pattern: translate_pattern(argument, true)?,
-            },
-        }),
+        "stack.abs_path" | "path" => negate(negated, PathLikeMatch::new("path", argument)?),
+        "stack.package" | "package" => negate(negated, PathLikeMatch::new("package", argument)?),
 
         // Family matcher
-        "family" => Arc::new(SimpleFieldMatch {
-            negated,
-            matcher: FamilyMatch {
-                families: argument.split(',').map(SmolStr::from).collect(),
-            },
-        }),
+        "family" => negate(negated, FamilyMatch::new(argument)),
 
         // InApp matcher
-        "app" => Arc::new(SimpleFieldMatch {
+        "app" => negate(
             negated,
-            matcher: InAppMatch {
+            InAppMatch {
                 expected: boolean_value(argument),
             },
-        }),
+        ),
 
         matcher_type => anyhow::bail!("Unknown matcher `{matcher_type}`"),
-    })
+    };
+
+    Ok(matcher)
 }
 
 pub trait Matcher {
@@ -130,25 +99,36 @@ trait SimpleFieldMatcher {
     fn matches_value(&self, value: &str) -> bool;
 }
 
-#[derive(Debug, Clone)]
-struct SimpleFieldMatch<S> {
-    negated: bool,
-    matcher: S,
-}
-
-impl<S: SimpleFieldMatcher> Matcher for SimpleFieldMatch<S> {
+impl<S: SimpleFieldMatcher> Matcher for S {
     fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
         fn matches_frame<S: SimpleFieldMatcher>(
-            this: &SimpleFieldMatch<S>,
+            this: &S,
             frames: &[Frame],
             idx: usize,
         ) -> Option<bool> {
             let frame = frames.get(idx)?;
-            let value = frame.get_field(this.matcher.field())?;
+            let value = frame.get_field(this.field())?;
 
-            Some(this.matcher.matches_value(value))
+            Some(this.matches_value(value))
         }
-        self.negated ^ matches_frame(self, frames, idx).unwrap_or_default()
+        matches_frame(self, frames, idx).unwrap_or_default()
+    }
+}
+
+#[derive(Debug, Clone)]
+struct Negate<M>(M);
+
+impl<M: Matcher> Matcher for Negate<M> {
+    fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
+        !self.0.matches_frame(frames, idx)
+    }
+}
+
+fn negate<M: Matcher + 'static>(yes: bool, matcher: M) -> Arc<dyn Matcher> {
+    if yes {
+        Arc::new(Negate(matcher))
+    } else {
+        Arc::new(matcher)
     }
 }
 
@@ -156,6 +136,14 @@ impl<S: SimpleFieldMatcher> Matcher for SimpleFieldMatch<S> {
 struct FrameFieldMatch {
     field: &'static str, // function, module, category
     pattern: Regex,
+}
+
+impl FrameFieldMatch {
+    fn new(field: &'static str, pattern: &str) -> anyhow::Result<Self> {
+        let pattern = translate_pattern(pattern, false)?;
+
+        Ok(Self { field, pattern })
+    }
 }
 
 impl SimpleFieldMatcher for FrameFieldMatch {
@@ -171,6 +159,14 @@ impl SimpleFieldMatcher for FrameFieldMatch {
 struct PathLikeMatch {
     field: &'static str, // package, path
     pattern: Regex,      // translate_pattern(true)
+}
+
+impl PathLikeMatch {
+    fn new(field: &'static str, pattern: &str) -> anyhow::Result<Self> {
+        let pattern = translate_pattern(pattern, true)?;
+
+        Ok(Self { field, pattern })
+    }
 }
 
 impl SimpleFieldMatcher for PathLikeMatch {
@@ -198,6 +194,14 @@ impl SimpleFieldMatcher for PathLikeMatch {
 #[derive(Debug, Clone)]
 struct FamilyMatch {
     families: HashSet<SmolStr>,
+}
+
+impl FamilyMatch {
+    fn new(families: &str) -> Self {
+        let families = families.split(',').map(SmolStr::from).collect();
+
+        Self { families }
+    }
 }
 
 impl SimpleFieldMatcher for FamilyMatch {
