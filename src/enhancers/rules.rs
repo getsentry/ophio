@@ -1,17 +1,43 @@
-use std::sync::Arc;
+use std::{iter, sync::Arc};
 
-use super::matchers::{ExceptionData, ExceptionMatcher, Frame, FrameMatcher};
+use super::{
+    actions::Action,
+    grammar::{RawMatcher, RawRule},
+    matchers::{
+        get_matcher, ExceptionData, ExceptionMatcher, Frame, FrameMatcher, FrameOrExceptionMatcher,
+    },
+};
 
 #[derive(Clone)]
 struct Rule {
     frame_matchers: Vec<Arc<dyn FrameMatcher>>,
     exception_matchers: Vec<Arc<dyn ExceptionMatcher>>,
-    // TODO: Add actions
+    actions: Vec<Action>,
 }
 
 impl Rule {
-    // TODO: Return actions
-    fn get_actions(&self, frames: &[Frame], exception_data: &ExceptionData) -> Vec<usize> {
+    fn from_raw(raw: RawRule) -> anyhow::Result<Self> {
+        let mut frame_matchers = Vec::new();
+        let mut exception_matchers = Vec::new();
+        let mut actions = Vec::new();
+
+        if let Some(RawMatcher {
+            negation,
+            ty,
+            argument,
+        }) = raw.matchers.caller_matcher
+        {
+            match get_matcher(negation, ty, argument)? {
+                FrameOrExceptionMatcher::Frame(_) => todo!(),
+                FrameOrExceptionMatcher::Exception(_) => todo!(),
+            }
+        }
+    }
+    fn get_actions(
+        &self,
+        frames: &[Frame],
+        exception_data: &ExceptionData,
+    ) -> Vec<(usize, Action)> {
         if self
             .exception_matchers
             .iter()
@@ -27,7 +53,7 @@ impl Rule {
                 .iter()
                 .all(|m| m.matches_frame(frames, idx))
             {
-                res.push(idx);
+                res.extend(iter::repeat(idx).zip(self.actions.iter().cloned()))
             }
         }
 
