@@ -101,17 +101,15 @@ trait SimpleFieldMatcher {
 
 impl<S: SimpleFieldMatcher> Matcher for S {
     fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
-        fn matches_frame<S: SimpleFieldMatcher>(
-            this: &S,
-            frames: &[Frame],
-            idx: usize,
-        ) -> Option<bool> {
-            let frame = frames.get(idx)?;
-            let value = frame.get_field(this.field())?;
+        let Some(frame) = frames.get(idx) else {
+            return false;
+        };
 
-            Some(this.matches_value(value))
-        }
-        matches_frame(self, frames, idx).unwrap_or_default()
+        let Some(value) = frame.get_field(self.field()) else {
+            return false;
+        };
+
+        self.matches_value(value)
     }
 }
 
