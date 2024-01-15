@@ -1,5 +1,6 @@
 use pyo3::prelude::*;
 
+mod enhancers;
 mod proguard;
 
 /// A Python module implemented in Rust.
