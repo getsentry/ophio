@@ -266,6 +266,24 @@ impl SimpleFieldMatcher for InAppMatch {
     }
 }
 
+#[derive(Debug, Clone)]
+struct CallerMatch<M>(M);
+
+impl<M: FrameMatcher> FrameMatcher for CallerMatch<M> {
+    fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
+        idx > 0 && self.0.matches_frame(frames, idx - 1)
+    }
+}
+
+#[derive(Debug, Clone)]
+struct CalleeMatch<M>(M);
+
+impl<M: FrameMatcher> FrameMatcher for CalleeMatch<M> {
+    fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
+        idx < frames.len() - 1 && self.0.matches_frame(frames, idx + 1)
+    }
+}
+
 pub trait ExceptionMatcher {
     fn matches_exception(&self, exception_data: &ExceptionData) -> bool;
 }
