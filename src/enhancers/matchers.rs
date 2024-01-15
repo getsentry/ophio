@@ -246,6 +246,54 @@ impl SimpleFieldMatcher for InAppMatch {
     }
 }
 
+struct ExceptionTypeMatch {
+    pattern: Regex,
+}
+
+impl Matcher for ExceptionTypeMatch {
+    fn matches_frame(
+        &self,
+        _frames: &[Frame],
+        _idx: usize,
+        exception_data: &ExceptionData,
+    ) -> bool {
+        let ty = exception_data.ty.as_deref().unwrap_or("<unknown>");
+        self.pattern.is_match(ty.as_bytes())
+    }
+}
+
+struct ExceptionValueMatch {
+    pattern: Regex,
+}
+
+impl Matcher for ExceptionValueMatch {
+    fn matches_frame(
+        &self,
+        _frames: &[Frame],
+        _idx: usize,
+        exception_data: &ExceptionData,
+    ) -> bool {
+        let value = exception_data.value.as_deref().unwrap_or("<unknown>");
+        self.pattern.is_match(value.as_bytes())
+    }
+}
+
+struct ExceptionMechanismMatch {
+    pattern: Regex,
+}
+
+impl Matcher for ExceptionMechanismMatch {
+    fn matches_frame(
+        &self,
+        _frames: &[Frame],
+        _idx: usize,
+        exception_data: &ExceptionData,
+    ) -> bool {
+        let mechanism = exception_data.mechanism.as_deref().unwrap_or("<unknown>");
+        self.pattern.is_match(mechanism.as_bytes())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::enhancers::grammar::parse_enhancers;
