@@ -384,7 +384,8 @@ mod tests {
 
         let macos_matcher =
             create_matcher("family:native package:**/*.app/Contents/**                   +app");
-        assert!(!macos_matcher(Frame {
+
+        assert!(macos_matcher(Frame {
             fields: [
                 (
                     "package",
@@ -397,20 +398,23 @@ mod tests {
 
         let linux_matcher =
             create_matcher("family:native package:linux-gate.so                          -app");
-        assert!(!linux_matcher(Frame {
+
+        assert!(linux_matcher(Frame {
             fields: [("package", "linux-gate.so"), ("family", "native")].into()
         }));
 
         let windows_matcher =
             create_matcher("family:native package:?:/Windows/**                          -app");
-        assert!(!windows_matcher(Frame {
+
+        assert!(windows_matcher(Frame {
             fields: [
                 ("package", "D:\\Windows\\System32\\kernel32.dll"),
                 ("family", "native")
             ]
             .into()
         }));
-        assert!(!windows_matcher(Frame {
+
+        assert!(windows_matcher(Frame {
             fields: [
                 ("package", "d:\\windows\\System32\\kernel32.dll"),
                 ("family", "native")
