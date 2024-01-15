@@ -59,7 +59,7 @@ pub fn get_matcher(
     negated: bool,
     matcher_type: &str,
     argument: &str,
-) -> anyhow::Result<Arc<dyn Matcher>> {
+) -> anyhow::Result<Arc<dyn FrameMatcher>> {
     // TODO: cache based on (negated, matcher_type, argument)
     let matcher = match matcher_type {
         // Field matchers
@@ -96,8 +96,8 @@ struct ExceptionData {
     mechanism: Option<String>,
 }
 
-pub trait Matcher {
-    fn matches_frame(&self, frames: &[Frame], idx: usize, exception_data: &ExceptionData) -> bool;
+pub trait FrameMatcher {
+    fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool;
 }
 
 trait SimpleFieldMatcher {
@@ -105,8 +105,8 @@ trait SimpleFieldMatcher {
     fn matches_value(&self, value: &str) -> bool;
 }
 
-impl<S: SimpleFieldMatcher> Matcher for S {
-    fn matches_frame(&self, frames: &[Frame], idx: usize, _exception_data: &ExceptionData) -> bool {
+impl<S: SimpleFieldMatcher> FrameMatcher for S {
+    fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
         let Some(frame) = frames.get(idx) else {
             return false;
         };
@@ -120,19 +120,19 @@ impl<S: SimpleFieldMatcher> Matcher for S {
 }
 
 #[derive(Debug, Clone)]
-struct FrameMatcher<M> {
+struct NegationWrapper<M> {
     negated: bool,
     inner: M,
 }
 
-impl<M: Matcher> Matcher for FrameMatcher<M> {
-    fn matches_frame(&self, frames: &[Frame], idx: usize, exception_data: &ExceptionData) -> bool {
-        self.negated ^ self.inner.matches_frame(frames, idx, exception_data)
+impl<M: FrameMatcher> FrameMatcher for NegationWrapper<M> {
+    fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
+        self.negated ^ self.inner.matches_frame(frames, idx)
     }
 }
 
-fn frame_matcher<M: Matcher + 'static>(negated: bool, matcher: M) -> Arc<dyn Matcher> {
-    Arc::new(FrameMatcher {
+fn frame_matcher<M: FrameMatcher + 'static>(negated: bool, matcher: M) -> Arc<dyn FrameMatcher> {
+    Arc::new(NegationWrapper {
         negated,
         inner: matcher,
     })
@@ -246,17 +246,16 @@ impl SimpleFieldMatcher for InAppMatch {
     }
 }
 
+pub trait ExceptionMatcher {
+    fn matches_exception(&self, exception_data: &ExceptionData) -> bool;
+}
+
 struct ExceptionTypeMatch {
     pattern: Regex,
 }
 
-impl Matcher for ExceptionTypeMatch {
-    fn matches_frame(
-        &self,
-        _frames: &[Frame],
-        _idx: usize,
-        exception_data: &ExceptionData,
-    ) -> bool {
+impl ExceptionMatcher for ExceptionTypeMatch {
+    fn matches_exception(&self, exception_data: &ExceptionData) -> bool {
         let ty = exception_data.ty.as_deref().unwrap_or("<unknown>");
         self.pattern.is_match(ty.as_bytes())
     }
@@ -266,13 +265,8 @@ struct ExceptionValueMatch {
     pattern: Regex,
 }
 
-impl Matcher for ExceptionValueMatch {
-    fn matches_frame(
-        &self,
-        _frames: &[Frame],
-        _idx: usize,
-        exception_data: &ExceptionData,
-    ) -> bool {
+impl ExceptionMatcher for ExceptionValueMatch {
+    fn matches_exception(&self, exception_data: &ExceptionData) -> bool {
         let value = exception_data.value.as_deref().unwrap_or("<unknown>");
         self.pattern.is_match(value.as_bytes())
     }
@@ -282,15 +276,16 @@ struct ExceptionMechanismMatch {
     pattern: Regex,
 }
 
-impl Matcher for ExceptionMechanismMatch {
-    fn matches_frame(
-        &self,
-        _frames: &[Frame],
-        _idx: usize,
-        exception_data: &ExceptionData,
-    ) -> bool {
+impl ExceptionMatcher for ExceptionMechanismMatch {
+    fn matches_exception(&self, exception_data: &ExceptionData) -> bool {
         let mechanism = exception_data.mechanism.as_deref().unwrap_or("<unknown>");
         self.pattern.is_match(mechanism.as_bytes())
+    }
+}
+
+impl<M: ExceptionMatcher> ExceptionMatcher for NegationWrapper<M> {
+    fn matches_exception(&self, exception_data: &ExceptionData) -> bool {
+        self.negated ^ self.inner.matches_exception(exception_data)
     }
 }
 
@@ -314,7 +309,7 @@ mod tests {
             let frames = &[frame];
             matchers
                 .iter()
-                .all(|matcher| matcher.matches_frame(frames, 0, &Default::default()))
+                .all(|matcher| matcher.matches_frame(frames, 0))
         }
     }
 
