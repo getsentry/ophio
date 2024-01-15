@@ -77,12 +77,7 @@ pub fn get_matcher(
         "family" => negate(negated, FamilyMatch::new(argument)),
 
         // InApp matcher
-        "app" => negate(
-            negated,
-            InAppMatch {
-                expected: boolean_value(argument),
-            },
-        ),
+        "app" => negate(negated, InAppMatch::new(argument)?),
 
         matcher_type => anyhow::bail!("Unknown matcher `{matcher_type}`"),
     };
@@ -215,6 +210,16 @@ impl SimpleFieldMatcher for FamilyMatch {
 #[derive(Debug, Clone)]
 struct InAppMatch {
     expected: bool,
+}
+
+impl InAppMatch {
+    fn new(expected: &str) -> anyhow::Result<Self> {
+        match expected {
+            "1" | "true" | "yes" => Ok(Self { expected: true }),
+            "0" | "false" | "no" => Ok(Self { expected: false }),
+            _ => Err(anyhow::anyhow!("Invalid value for `app`: `{expected}`")),
+        }
+    }
 }
 
 impl SimpleFieldMatcher for InAppMatch {
