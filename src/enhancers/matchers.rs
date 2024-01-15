@@ -63,21 +63,25 @@ pub fn get_matcher(
     // TODO: cache based on (negated, matcher_type, argument)
     let matcher = match matcher_type {
         // Field matchers
-        "stack.module" | "module" => negate(negated, FrameFieldMatch::new("module", argument)?),
-        "stack.function" | "function" => {
-            negate(negated, FrameFieldMatch::new("function", argument)?)
+        "stack.module" | "module" => {
+            frame_matcher(negated, FrameFieldMatch::new("module", argument)?)
         }
-        "category" => negate(negated, FrameFieldMatch::new("category", argument)?),
+        "stack.function" | "function" => {
+            frame_matcher(negated, FrameFieldMatch::new("function", argument)?)
+        }
+        "category" => frame_matcher(negated, FrameFieldMatch::new("category", argument)?),
 
         // Path matchers
-        "stack.abs_path" | "path" => negate(negated, PathLikeMatch::new("path", argument)?),
-        "stack.package" | "package" => negate(negated, PathLikeMatch::new("package", argument)?),
+        "stack.abs_path" | "path" => frame_matcher(negated, PathLikeMatch::new("path", argument)?),
+        "stack.package" | "package" => {
+            frame_matcher(negated, PathLikeMatch::new("package", argument)?)
+        }
 
         // Family matcher
-        "family" => negate(negated, FamilyMatch::new(argument)),
+        "family" => frame_matcher(negated, FamilyMatch::new(argument)),
 
         // InApp matcher
-        "app" => negate(negated, InAppMatch::new(argument)?),
+        "app" => frame_matcher(negated, InAppMatch::new(argument)?),
 
         matcher_type => anyhow::bail!("Unknown matcher `{matcher_type}`"),
     };
@@ -109,20 +113,22 @@ impl<S: SimpleFieldMatcher> Matcher for S {
 }
 
 #[derive(Debug, Clone)]
-struct Negate<M>(M);
+struct FrameMatcher<M> {
+    negated: bool,
+    inner: M,
+}
 
-impl<M: Matcher> Matcher for Negate<M> {
+impl<M: Matcher> Matcher for FrameMatcher<M> {
     fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
-        !self.0.matches_frame(frames, idx)
+        self.negated ^ self.inner.matches_frame(frames, idx)
     }
 }
 
-fn negate<M: Matcher + 'static>(yes: bool, matcher: M) -> Arc<dyn Matcher> {
-    if yes {
-        Arc::new(Negate(matcher))
-    } else {
-        Arc::new(matcher)
-    }
+fn frame_matcher<M: Matcher + 'static>(negated: bool, matcher: M) -> Arc<dyn Matcher> {
+    Arc::new(FrameMatcher {
+        negated,
+        inner: matcher,
+    })
 }
 
 #[derive(Debug, Clone)]
