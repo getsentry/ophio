@@ -89,8 +89,15 @@ pub fn get_matcher(
     Ok(matcher)
 }
 
+#[derive(Debug, Clone, Default)]
+struct ExceptionData {
+    ty: Option<String>,
+    value: Option<String>,
+    mechanism: Option<String>,
+}
+
 pub trait Matcher {
-    fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool;
+    fn matches_frame(&self, frames: &[Frame], idx: usize, exception_data: &ExceptionData) -> bool;
 }
 
 trait SimpleFieldMatcher {
@@ -99,7 +106,7 @@ trait SimpleFieldMatcher {
 }
 
 impl<S: SimpleFieldMatcher> Matcher for S {
-    fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
+    fn matches_frame(&self, frames: &[Frame], idx: usize, _exception_data: &ExceptionData) -> bool {
         let Some(frame) = frames.get(idx) else {
             return false;
         };
@@ -119,8 +126,8 @@ struct FrameMatcher<M> {
 }
 
 impl<M: Matcher> Matcher for FrameMatcher<M> {
-    fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
-        self.negated ^ self.inner.matches_frame(frames, idx)
+    fn matches_frame(&self, frames: &[Frame], idx: usize, exception_data: &ExceptionData) -> bool {
+        self.negated ^ self.inner.matches_frame(frames, idx, exception_data)
     }
 }
 
@@ -259,7 +266,7 @@ mod tests {
             let frames = &[frame];
             matchers
                 .iter()
-                .all(|matcher| matcher.matches_frame(frames, 0))
+                .all(|matcher| matcher.matches_frame(frames, 0, &Default::default()))
         }
     }
 
