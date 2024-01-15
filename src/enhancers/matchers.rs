@@ -110,7 +110,7 @@ pub fn get_matcher(negated: bool, matcher_type: &str, argument: &str) -> anyhow:
 }
 
 #[derive(Debug, Clone, Default)]
-struct ExceptionData {
+pub struct ExceptionData {
     ty: Option<String>,
     value: Option<String>,
     mechanism: Option<String>,
