@@ -5,6 +5,7 @@ use globset::GlobBuilder;
 use regex::bytes::{Regex, RegexBuilder};
 use smol_str::SmolStr;
 
+#[derive(Debug, Clone)]
 pub struct Frame {
     // TODO:
     fields: HashMap<&'static str, &'static str>,
@@ -128,6 +129,7 @@ trait SimpleFieldMatcher {
     fn matches_value(&self, value: &str) -> bool;
 }
 
+#[derive(Debug, Clone)]
 struct SimpleFieldMatch<S> {
     negated: bool,
     matcher: S,
@@ -149,6 +151,7 @@ impl<S: SimpleFieldMatcher> Matcher for SimpleFieldMatch<S> {
     }
 }
 
+#[derive(Debug, Clone)]
 struct FrameFieldMatch {
     field: &'static str, // function, module, category
     pattern: Regex,
@@ -163,6 +166,7 @@ impl SimpleFieldMatcher for FrameFieldMatch {
     }
 }
 
+#[derive(Debug, Clone)]
 struct PathLikeMatch {
     field: &'static str, // package, path
     pattern: Regex,      // translate_pattern(true)
@@ -188,6 +192,7 @@ impl SimpleFieldMatcher for PathLikeMatch {
     }
 }
 
+#[derive(Debug, Clone)]
 struct FamilyMatch {
     families: HashSet<SmolStr>,
 }
@@ -202,6 +207,7 @@ impl SimpleFieldMatcher for FamilyMatch {
     }
 }
 
+#[derive(Debug, Clone)]
 struct InAppMatch {
     expected: bool,
 }
