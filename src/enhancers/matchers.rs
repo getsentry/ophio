@@ -20,16 +20,7 @@ impl Frame {
 /*
 MATCHERS = {
     # discover field names
-    "error.type": "type",
-    "error.value": "value",
-    "error.mechanism": "mechanism",
     # fingerprinting specific fields
-    "app": "app",
-}
-            "app": InAppMatch,
-            "type": ExceptionTypeMatch,
-            "value": ExceptionValueMatch,
-            "mechanism": ExceptionMechanismMatch,
 
 
         if value in ("1", "yes", "true"):
@@ -55,33 +46,62 @@ fn translate_pattern(pat: &str, is_path_matcher: bool) -> anyhow::Result<Regex> 
     Ok(RegexBuilder::new(glob.regex()).build()?)
 }
 
-pub fn get_matcher(
-    negated: bool,
-    matcher_type: &str,
-    argument: &str,
-) -> anyhow::Result<Arc<dyn FrameMatcher>> {
+#[derive(Debug, Clone)]
+pub enum FrameOrExceptionMatcher<F, E> {
+    Frame(F),
+    Exception(E),
+}
+
+pub type Matcher = FrameOrExceptionMatcher<Arc<dyn FrameMatcher>, Arc<dyn ExceptionMatcher>>;
+
+pub fn get_matcher(negated: bool, matcher_type: &str, argument: &str) -> anyhow::Result<Matcher> {
     // TODO: cache based on (negated, matcher_type, argument)
     let matcher = match matcher_type {
         // Field matchers
-        "stack.module" | "module" => {
-            frame_matcher(negated, FrameFieldMatch::new("module", argument)?)
-        }
-        "stack.function" | "function" => {
-            frame_matcher(negated, FrameFieldMatch::new("function", argument)?)
-        }
-        "category" => frame_matcher(negated, FrameFieldMatch::new("category", argument)?),
+        "stack.module" | "module" => FrameOrExceptionMatcher::Frame(frame_matcher(
+            negated,
+            FrameFieldMatch::new("module", argument)?,
+        )),
+        "stack.function" | "function" => FrameOrExceptionMatcher::Frame(frame_matcher(
+            negated,
+            FrameFieldMatch::new("function", argument)?,
+        )),
+        "category" => FrameOrExceptionMatcher::Frame(frame_matcher(
+            negated,
+            FrameFieldMatch::new("category", argument)?,
+        )),
 
         // Path matchers
-        "stack.abs_path" | "path" => frame_matcher(negated, PathLikeMatch::new("path", argument)?),
-        "stack.package" | "package" => {
-            frame_matcher(negated, PathLikeMatch::new("package", argument)?)
-        }
+        "stack.abs_path" | "path" => FrameOrExceptionMatcher::Frame(frame_matcher(
+            negated,
+            PathLikeMatch::new("path", argument)?,
+        )),
+        "stack.package" | "package" => FrameOrExceptionMatcher::Frame(frame_matcher(
+            negated,
+            PathLikeMatch::new("package", argument)?,
+        )),
 
         // Family matcher
-        "family" => frame_matcher(negated, FamilyMatch::new(argument)),
+        "family" => {
+            FrameOrExceptionMatcher::Frame(frame_matcher(negated, FamilyMatch::new(argument)))
+        }
 
         // InApp matcher
-        "app" => frame_matcher(negated, InAppMatch::new(argument)?),
+        "app" => FrameOrExceptionMatcher::Frame(frame_matcher(negated, InAppMatch::new(argument)?)),
+
+        // Exception matchers
+        "error.type" | "type" => FrameOrExceptionMatcher::Exception(exception_matcher(
+            negated,
+            ExceptionTypeMatch::new(argument)?,
+        )),
+        "error.value" | "value" => FrameOrExceptionMatcher::Exception(exception_matcher(
+            negated,
+            ExceptionValueMatch::new(argument)?,
+        )),
+        "error.mechanism" | "mechanism" => FrameOrExceptionMatcher::Exception(exception_matcher(
+            negated,
+            ExceptionMechanismMatch::new(argument)?,
+        )),
 
         matcher_type => anyhow::bail!("Unknown matcher `{matcher_type}`"),
     };
@@ -254,6 +274,13 @@ struct ExceptionTypeMatch {
     pattern: Regex,
 }
 
+impl ExceptionTypeMatch {
+    fn new(pattern: &str) -> anyhow::Result<Self> {
+        let pattern = translate_pattern(pattern, false)?;
+        Ok(Self { pattern })
+    }
+}
+
 impl ExceptionMatcher for ExceptionTypeMatch {
     fn matches_exception(&self, exception_data: &ExceptionData) -> bool {
         let ty = exception_data.ty.as_deref().unwrap_or("<unknown>");
@@ -263,6 +290,13 @@ impl ExceptionMatcher for ExceptionTypeMatch {
 
 struct ExceptionValueMatch {
     pattern: Regex,
+}
+
+impl ExceptionValueMatch {
+    fn new(pattern: &str) -> anyhow::Result<Self> {
+        let pattern = translate_pattern(pattern, false)?;
+        Ok(Self { pattern })
+    }
 }
 
 impl ExceptionMatcher for ExceptionValueMatch {
@@ -276,6 +310,13 @@ struct ExceptionMechanismMatch {
     pattern: Regex,
 }
 
+impl ExceptionMechanismMatch {
+    fn new(pattern: &str) -> anyhow::Result<Self> {
+        let pattern = translate_pattern(pattern, false)?;
+        Ok(Self { pattern })
+    }
+}
+
 impl ExceptionMatcher for ExceptionMechanismMatch {
     fn matches_exception(&self, exception_data: &ExceptionData) -> bool {
         let mechanism = exception_data.mechanism.as_deref().unwrap_or("<unknown>");
@@ -287,6 +328,16 @@ impl<M: ExceptionMatcher> ExceptionMatcher for NegationWrapper<M> {
     fn matches_exception(&self, exception_data: &ExceptionData) -> bool {
         self.negated ^ self.inner.matches_exception(exception_data)
     }
+}
+
+fn exception_matcher<M: ExceptionMatcher + 'static>(
+    negated: bool,
+    matcher: M,
+) -> Arc<dyn ExceptionMatcher> {
+    Arc::new(NegationWrapper {
+        negated,
+        inner: matcher,
+    })
 }
 
 #[cfg(test)]
@@ -303,6 +354,10 @@ mod tests {
             .matchers
             .iter()
             .map(|matcher| get_matcher(matcher.negation, &matcher.ty, &matcher.argument).unwrap())
+            .filter_map(|m| match m {
+                FrameOrExceptionMatcher::Frame(m) => Some(m),
+                FrameOrExceptionMatcher::Exception(_) => None,
+            })
             .collect();
 
         move |frame: Frame| {
