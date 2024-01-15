@@ -185,10 +185,12 @@ impl SimpleFieldMatcher for PathLikeMatch {
         if self.pattern.is_match(value.as_bytes()) {
             return true;
         }
+
         if !value.starts_with('/') {
             value.insert(0, '/');
             return self.pattern.is_match(value.as_bytes());
         }
+
         false
     }
 }
@@ -253,35 +255,27 @@ mod tests {
         let matcher = create_matcher("path:**/test.js              +app");
 
         assert!(matcher(Frame {
-            fields: [
-                ("abs_path", "http://example.com/foo/test.js"),
-                ("filename", "/foo/test.js")
-            ]
-            .into()
+            fields: [("path", "http://example.com/foo/test.js"),].into()
         }));
 
         assert!(!matcher(Frame {
-            fields: [
-                ("abs_path", "http://example.com/foo/bar.js"),
-                ("filename", "/foo/bar.js")
-            ]
-            .into()
+            fields: [("path", "http://example.com/foo/bar.js"),].into()
         }));
 
         assert!(matcher(Frame {
-            fields: [("abs_path", "http://example.com/foo/test.js")].into()
+            fields: [("path", "http://example.com/foo/test.js")].into()
         }));
 
         assert!(!matcher(Frame {
-            fields: [("filename", "/foo/bar.js")].into()
+            fields: [("path", "/foo/bar.js")].into()
         }));
 
         assert!(matcher(Frame {
-            fields: [("abs_path", "http://example.com/foo/TEST.js")].into()
+            fields: [("path", "http://example.com/foo/TEST.js")].into()
         }));
 
         assert!(!matcher(Frame {
-            fields: [("abs_path", "http://example.com/foo/bar.js")].into()
+            fields: [("path", "http://example.com/foo/bar.js")].into()
         }));
     }
 
@@ -292,14 +286,14 @@ mod tests {
 
         assert!(js_matcher(Frame {
             fields: [
-                ("abs_path", "http://example.com/foo/TEST.js"),
+                ("path", "http://example.com/foo/TEST.js"),
                 ("family", "javascript")
             ]
             .into()
         }));
         assert!(!js_matcher(Frame {
             fields: [
-                ("abs_path", "http://example.com/foo/TEST.js"),
+                ("path", "http://example.com/foo/TEST.js"),
                 ("family", "native")
             ]
             .into()
@@ -307,7 +301,7 @@ mod tests {
 
         assert!(!native_matcher(Frame {
             fields: [
-                ("abs_path", "http://example.com/foo/TEST.js"),
+                ("path", "http://example.com/foo/TEST.js"),
                 ("function", "std::whatever"),
                 ("family", "javascript")
             ]
@@ -326,7 +320,7 @@ mod tests {
         // TODO:
         assert!(yes_matcher(Frame {
             fields: [
-                ("abs_path", "http://example.com/foo/TEST.js"),
+                ("path", "http://example.com/foo/TEST.js"),
                 ("family", "javascript"),
                 ("in_app", "true")
             ]
@@ -334,7 +328,7 @@ mod tests {
         }));
         assert!(!yes_matcher(Frame {
             fields: [
-                ("abs_path", "http://example.com/foo/TEST.js"),
+                ("path", "http://example.com/foo/TEST.js"),
                 ("family", "javascript"),
                 ("in_app", "false")
             ]
@@ -342,7 +336,7 @@ mod tests {
         }));
         assert!(no_matcher(Frame {
             fields: [
-                ("abs_path", "/test.c"),
+                ("path", "/test.c"),
                 ("family", "native"),
                 ("in_app", "false")
             ]
@@ -350,7 +344,7 @@ mod tests {
         }));
         assert!(!no_matcher(Frame {
             fields: [
-                ("abs_path", "/test.c"),
+                ("path", "/test.c"),
                 ("family", "native"),
                 ("in_app", "true")
             ]
