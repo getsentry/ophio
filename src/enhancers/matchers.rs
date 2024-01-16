@@ -280,7 +280,7 @@ struct CalleeMatch<M>(M);
 
 impl<M: FrameMatcher> FrameMatcher for CalleeMatch<M> {
     fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
-        idx < frames.len() - 1 && self.0.matches_frame(frames, idx + 1)
+        !frames.is_empty() && idx < frames.len() - 1 && self.0.matches_frame(frames, idx + 1)
     }
 }
 
