@@ -7,6 +7,9 @@ edition = "2021"
 name = "sentry_ophio"
 crate-type = ["cdylib"]
 
+[profile.release]
+debug = 1
+
 [dependencies]
 anyhow = "1.0.79"
 chumsky = "0.9.3"

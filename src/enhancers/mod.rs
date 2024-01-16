@@ -62,6 +62,8 @@ impl Enhancements {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Instant;
+
     use serde_json::Value;
 
     use super::*;
@@ -116,10 +118,14 @@ mod tests {
             mechanism: Some(SmolStr::new("AppHang")),
         };
 
-        dbg!(&stacktraces);
+        //dbg!(&stacktraces);
 
-        for mut frames in stacktraces {
-            enhancements.apply_modifications_to_frames(&mut frames, &exception_data);
+        let instant = Instant::now();
+        for _ in 0..=1_000 {
+            for frames in &mut stacktraces {
+                enhancements.apply_modifications_to_frames(frames, &exception_data);
+            }
         }
+        println!("Applied modifications in: {:?}", instant.elapsed());
     }
 }
