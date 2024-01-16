@@ -9,9 +9,9 @@ use super::ExceptionData;
 
 #[derive(Clone)]
 pub struct Rule {
-    frame_matchers: Vec<Arc<dyn FrameMatcher>>,
-    exception_matchers: Vec<Arc<dyn ExceptionMatcher>>,
-    actions: Vec<Action>,
+    pub frame_matchers: Vec<Arc<dyn FrameMatcher>>,
+    pub exception_matchers: Vec<Arc<dyn ExceptionMatcher>>,
+    pub actions: Vec<Action>,
 }
 
 impl fmt::Debug for Rule {
@@ -24,11 +24,8 @@ impl fmt::Debug for Rule {
     }
 }
 
-fn convert_matcher(raw: RawMatcher) -> anyhow::Result<Matcher> {
-    get_matcher(raw.negation, &raw.ty, &raw.argument)
-}
-
 impl Rule {
+<<<<<<< HEAD
     pub fn from_raw(raw: RawRule) -> anyhow::Result<Self> {
         let mut frame_matchers = Vec::new();
         let mut exception_matchers = Vec::new();
@@ -62,6 +59,8 @@ impl Rule {
         })
     }
 
+=======
+>>>>>>> d5edbed (Parse directly with nom)
     pub fn matches_exception(&self, exception_data: &ExceptionData) -> bool {
         self.exception_matchers
             .iter()

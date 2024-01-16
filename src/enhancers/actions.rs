@@ -1,7 +1,6 @@
 use smol_str::SmolStr;
 
 use super::frame::Frame;
-use super::grammar::RawAction;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Range {
@@ -19,9 +18,9 @@ pub enum FlagActionType {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FlagAction {
-    flag: bool,
-    ty: FlagActionType,
-    range: Option<Range>,
+    pub flag: bool,
+    pub ty: FlagActionType,
+    pub range: Option<Range>,
 }
 
 impl FlagAction {
@@ -49,8 +48,8 @@ pub enum VarName {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VarAction {
-    var: VarName,
-    value: SmolStr,
+    pub var: VarName,
+    pub value: SmolStr,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -60,6 +59,7 @@ pub enum Action {
 }
 
 impl Action {
+<<<<<<< HEAD
     pub fn from_raw(raw: RawAction) -> Self {
         match raw {
             RawAction::Var(var_name, value) => {
@@ -107,6 +107,8 @@ impl Action {
         )
     }
 
+=======
+>>>>>>> d5edbed (Parse directly with nom)
     pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize) {
         match self {
             Action::Flag(

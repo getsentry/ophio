@@ -101,7 +101,7 @@ impl Frame {
         frame.package = raw_frame
             .get("package")
             .and_then(|s| s.as_str())
-            .map(|s| SmolStr::new(s.to_lowercase()));
+            .map(|s| SmolStr::new(s.replace('\\', "/").to_lowercase()));
 
         frame.path = raw_frame
             .get("abs_path")
