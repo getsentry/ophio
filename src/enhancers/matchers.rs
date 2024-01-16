@@ -180,12 +180,17 @@ impl SimpleFieldMatcher for PathLikeMatch {
 
 #[derive(Debug, Clone)]
 struct FamilyMatch {
-    families: HashSet<SmolStr>,
+    // NOTE: This is a `Vec` because we typically only have a single item.
+    // NOTE: we optimize for `"all"` by just storing an empty `Vec` and checking for that
+    families: Vec<SmolStr>,
 }
 
 impl FamilyMatch {
     fn new(families: &str) -> Self {
-        let families = families.split(',').map(SmolStr::from).collect();
+        let mut families: Vec<_> = families.split(',').map(SmolStr::from).collect();
+        if families.contains(&SmolStr::new("all")) {
+            families = vec![];
+        }
 
         Self { families }
     }
@@ -197,7 +202,7 @@ impl SimpleFieldMatcher for FamilyMatch {
     }
 
     fn matches_value(&self, value: &str) -> bool {
-        self.families.contains("all") || self.families.contains(value)
+        self.families.is_empty() || self.families.iter().any(|el| el == value)
     }
 }
 
