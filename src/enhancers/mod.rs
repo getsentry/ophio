@@ -59,3 +59,67 @@ impl Enhancements {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use serde_json::Value;
+
+    use super::*;
+
+    #[test]
+    fn apply_full() {
+        let enhancers = std::fs::read_to_string("tests/fixtures/newstyle@2023-01-11.txt").unwrap();
+        let enhancements = Enhancements::parse(&enhancers).unwrap();
+
+        let event = std::fs::read_to_string("/Volumes/EncryptedScratchpad/event.json").unwrap();
+        let event: serde_json::Value = serde_json::from_str(&event).unwrap();
+
+        let platform = event
+            .get("platform")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default();
+
+        let mut stacktraces = vec![];
+        let mut collect_container = |c: &Value| {
+            let empty = vec![];
+            let frames = c
+                .pointer("/stacktrace/frames")
+                .and_then(|v| v.as_array())
+                .unwrap_or(&empty);
+            if !frames.is_empty() {
+                let frames: Vec<_> = frames
+                    .iter()
+                    .map(|f| Frame::from_test(f, platform))
+                    .collect();
+                stacktraces.push(frames);
+            }
+        };
+
+        for exc in event
+            .pointer("/exception/values")
+            .and_then(|v| v.as_array())
+            .unwrap_or(&vec![])
+        {
+            collect_container(exc);
+        }
+        for thread in event
+            .pointer("/threads/values")
+            .and_then(|v| v.as_array())
+            .unwrap_or(&vec![])
+        {
+            collect_container(thread);
+        }
+
+        let exception_data = ExceptionData {
+            ty: Some(SmolStr::new("App Hanging")),
+            value: Some(SmolStr::new("App hanging for at least 2000 ms.")),
+            mechanism: Some(SmolStr::new("AppHang")),
+        };
+
+        dbg!(&stacktraces);
+
+        for mut frames in stacktraces {
+            enhancements.apply_modifications_to_frames(&mut frames, &exception_data);
+        }
+    }
+}

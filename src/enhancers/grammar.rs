@@ -72,10 +72,10 @@ pub struct RawRule {
 
 mod nom {
     use nom::branch::alt;
-    use nom::bytes::complete::{tag, take_while1};
-    use nom::character::complete::{char, one_of, space0};
-    use nom::combinator::{all_consuming, opt};
-    use nom::multi::many1;
+    use nom::bytes::complete::{escaped_transform, tag, take_while1};
+    use nom::character::complete::{alpha1, anychar, char, one_of, space0};
+    use nom::combinator::{all_consuming, opt, value};
+    use nom::multi::{many0, many1};
     use nom::sequence::{delimited, pair, preceded, tuple};
     use nom::{Finish, IResult, Parser};
 
@@ -86,35 +86,21 @@ mod nom {
     }
 
     fn frame_matcher(input: &str) -> IResult<&str, RawMatcher> {
-        /*let (input, is_negation) = opt(tag("!"))(input)?;
-        let (input, matcher_type) = alt(ident, quoted_ident)(input)?;
-        let (input, _) = tag(":")(input)?;
-        let (input, argument) = alt(quoted, unquoted)(input)?;*/
         let input = input.trim_start();
 
         let quoted_ident = delimited(
             char('"'),
-            take_while1(|c: char| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | ':' | '-')),
+            take_while1(|c: char| {
+                c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | ':' | '-' | ' ')
+            }),
             char('"'),
         );
         let matcher_type = alt((ident, quoted_ident));
 
         let unquoted = take_while1(|c: char| !c.is_ascii_whitespace());
-        // let quoted = delimited(
-        //     char('"'),
-        //     escaped_transform(
-        //         alpha1,
-        //         '\\',
-        //         alt((
-        //             value("\\", tag("\\")),
-        //             value("\"", tag("\"")),
-        //             value("\n", tag("n")),
-        //         )),
-        //     ),
-        //     char('"'),
-        // );
-        //let argument = alt((quoted, unquoted));
-        let argument = unquoted;
+        // TODO: escapes, etc
+        let quoted = delimited(char('"'), take_while1(|c: char| c != '"'), char('"'));
+        let argument = alt((quoted, unquoted));
 
         let (input, (is_negation, matcher_type, _, argument)) =
             tuple((opt(char('!')), matcher_type, char(':'), argument))(input)?;
@@ -193,9 +179,11 @@ mod nom {
     }
 
     pub fn rule(input: &str) -> anyhow::Result<RawRule> {
-        let (_input, (matchers, actions)) = all_consuming(pair(matchers, actions))(input)
-            .finish()
-            .map_err(|e| anyhow::Error::msg(e.to_string()))?;
+        let comment = tuple((space0, char('#'), many0(anychar)));
+        let (_input, (matchers, actions, _)) =
+            all_consuming(tuple((matchers, actions, opt(comment))))(input)
+                .finish()
+                .map_err(|e| anyhow::Error::msg(e.to_string()))?;
 
         Ok(RawRule { matchers, actions })
     }

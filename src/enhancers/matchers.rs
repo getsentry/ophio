@@ -353,32 +353,32 @@ mod tests {
         let matcher = create_matcher("path:**/test.js              +app");
 
         assert!(matcher(Frame::from_test(
-            json!({"abs_path": "http://example.com/foo/test.js", "filename": "/foo/test.js"}),
+            &json!({"abs_path": "http://example.com/foo/test.js", "filename": "/foo/test.js"}),
             "javascript"
         )));
 
         assert!(!matcher(Frame::from_test(
-            json!({"abs_path": "http://example.com/foo/bar.js", "filename": "/foo/bar.js"}),
+            &json!({"abs_path": "http://example.com/foo/bar.js", "filename": "/foo/bar.js"}),
             "javascript"
         )));
 
         assert!(matcher(Frame::from_test(
-            json!({"abs_path": "http://example.com/foo/test.js"}),
+            &json!({"abs_path": "http://example.com/foo/test.js"}),
             "javascript"
         )));
 
         assert!(!matcher(Frame::from_test(
-            json!({"filename": "/foo/bar.js"}),
+            &json!({"filename": "/foo/bar.js"}),
             "javascript"
         )));
 
         assert!(matcher(Frame::from_test(
-            json!({"abs_path": "http://example.com/foo/TEST.js"}),
+            &json!({"abs_path": "http://example.com/foo/TEST.js"}),
             "javascript"
         )));
 
         assert!(!matcher(Frame::from_test(
-            json!({"abs_path": "http://example.com/foo/bar.js"}),
+            &json!({"abs_path": "http://example.com/foo/bar.js"}),
             "javascript"
         )));
     }
@@ -389,20 +389,20 @@ mod tests {
         let native_matcher = create_matcher("family:native function:std::*                  -app");
 
         assert!(js_matcher(Frame::from_test(
-            json!({"abs_path": "http://example.com/foo/TEST.js"}),
+            &json!({"abs_path": "http://example.com/foo/TEST.js"}),
             "javascript"
         )));
         assert!(!js_matcher(Frame::from_test(
-            json!({"abs_path": "http://example.com/foo/TEST.js"}),
+            &json!({"abs_path": "http://example.com/foo/TEST.js"}),
             "native"
         )));
 
         assert!(!native_matcher(Frame::from_test(
-            json!({"abs_path": "http://example.com/foo/TEST.js", "function": "std::whatever"}),
+            &json!({"abs_path": "http://example.com/foo/TEST.js", "function": "std::whatever"}),
             "javascript"
         )));
         assert!(native_matcher(Frame::from_test(
-            json!({"function": "std::whatever"}),
+            &json!({"function": "std::whatever"}),
             "native"
         )));
     }
@@ -413,19 +413,19 @@ mod tests {
         let no_matcher = create_matcher("family:native path:**/test.c app:no            -group");
 
         assert!(yes_matcher(Frame::from_test(
-            json!({"abs_path": "http://example.com/foo/TEST.js", "in_app": true}),
+            &json!({"abs_path": "http://example.com/foo/TEST.js", "in_app": true}),
             "javascript"
         )));
         assert!(!yes_matcher(Frame::from_test(
-            json!({"abs_path": "http://example.com/foo/TEST.js", "in_app": false}),
+            &json!({"abs_path": "http://example.com/foo/TEST.js", "in_app": false}),
             "javascript"
         )));
         assert!(no_matcher(Frame::from_test(
-            json!({"abs_path": "/test.c", "in_app": false}),
+            &json!({"abs_path": "/test.c", "in_app": false}),
             "native"
         )));
         assert!(!no_matcher(Frame::from_test(
-            json!({"abs_path": "/test.c", "in_app":true}),
+            &json!({"abs_path": "/test.c", "in_app":true}),
             "native"
         )));
     }
@@ -436,19 +436,19 @@ mod tests {
             create_matcher("family:native package:/var/**/Frameworks/**                  -app");
 
         assert!(bundled_matcher(Frame::from_test(
-            json!({"package": "/var/containers/MyApp/Frameworks/libsomething"}),
+            &json!({"package": "/var/containers/MyApp/Frameworks/libsomething"}),
             "native"
         )));
         assert!(!bundled_matcher(Frame::from_test(
-            json!({"package": "/var2/containers/MyApp/Frameworks/libsomething"}),
+            &json!({"package": "/var2/containers/MyApp/Frameworks/libsomething"}),
             "native"
         )));
         assert!(!bundled_matcher(Frame::from_test(
-            json!({"package": "/var/containers/MyApp/MacOs/MyApp"}),
+            &json!({"package": "/var/containers/MyApp/MacOs/MyApp"}),
             "native"
         )));
         assert!(!bundled_matcher(Frame::from_test(
-            json!({"package": "/usr/lib/linux-gate.so"}),
+            &json!({"package": "/usr/lib/linux-gate.so"}),
             "native"
         )));
 
@@ -456,7 +456,7 @@ mod tests {
             create_matcher("family:native package:**/*.app/Contents/**                   +app");
 
         assert!(macos_matcher(Frame::from_test(
-            json!({"package": "/Applications/MyStuff.app/Contents/MacOS/MyStuff"}),
+            &json!({"package": "/Applications/MyStuff.app/Contents/MacOS/MyStuff"}),
             "native"
         )));
 
@@ -464,7 +464,7 @@ mod tests {
             create_matcher("family:native package:linux-gate.so                          -app");
 
         assert!(linux_matcher(Frame::from_test(
-            json!({"package": "linux-gate.so"}),
+            &json!({"package": "linux-gate.so"}),
             "native"
         )));
 
@@ -472,12 +472,12 @@ mod tests {
             create_matcher("family:native package:?:/Windows/**                          -app");
 
         assert!(windows_matcher(Frame::from_test(
-            json!({"package": "D:\\Windows\\System32\\kernel32.dll"}),
+            &json!({"package": "D:\\Windows\\System32\\kernel32.dll"}),
             "native"
         )));
 
         assert!(windows_matcher(Frame::from_test(
-            json!({"package": "d:\\windows\\System32\\kernel32.dll"}),
+            &json!({"package": "d:\\windows\\System32\\kernel32.dll"}),
             "native"
         )));
     }

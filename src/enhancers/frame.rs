@@ -72,7 +72,7 @@ impl Frame {
     pub fn apply_modifications_to_py_object(&self) {}
 
     #[cfg(test)]
-    pub fn from_test(raw_frame: serde_json::Value, platform: &str) -> Self {
+    pub fn from_test(raw_frame: &serde_json::Value, platform: &str) -> Self {
         let mut frame = Self::default();
 
         frame.category = raw_frame

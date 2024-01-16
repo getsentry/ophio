@@ -132,8 +132,8 @@ mod tests {
         let enhancements = Enhancements::parse("app:no +app").unwrap();
 
         let mut frames = vec![
-            Frame::from_test(json!({"function": "foo"}), "native"),
-            Frame::from_test(json!({"function": "foo", "in_app": false}), "native"),
+            Frame::from_test(&json!({"function": "foo"}), "native"),
+            Frame::from_test(&json!({"function": "foo", "in_app": false}), "native"),
         ];
 
         enhancements.apply_modifications_to_frames(&mut frames, &Default::default());
