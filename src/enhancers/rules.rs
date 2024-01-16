@@ -1,10 +1,10 @@
-use std::{iter, sync::Arc};
+use std::iter;
+use std::sync::Arc;
 
-use super::{
-    actions::Action,
-    grammar::{RawMatcher, RawRule},
-    matchers::{get_matcher, ExceptionData, ExceptionMatcher, Frame, FrameMatcher, Matcher},
-};
+use super::actions::Action;
+use super::frame::Frame;
+use super::grammar::{RawMatcher, RawRule};
+use super::matchers::{get_matcher, ExceptionData, ExceptionMatcher, FrameMatcher, Matcher};
 
 #[derive(Clone)]
 struct Rule {
