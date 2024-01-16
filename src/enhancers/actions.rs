@@ -118,3 +118,30 @@ impl Action {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn in_app_modification() {
+        // TODO: actually test full `Enhancements` with parsing, etc
+        let action = Action::Flag(FlagAction {
+            flag: true,
+            ty: FlagActionType::App,
+            range: None,
+        });
+
+        let mut frames = vec![
+            Frame::from_test(json!({"function": "foo"}), "native"),
+            Frame::from_test(json!({"function": "foo", "in_app": false}), "native"),
+        ];
+        for idx in 0..frames.len() {
+            action.apply_modifications_to_frame(&mut frames, idx);
+        }
+        assert!(frames[0].in_app);
+        assert!(frames[1].in_app);
+    }
+}
