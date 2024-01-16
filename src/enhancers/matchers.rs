@@ -124,59 +124,55 @@ fn translate_pattern(pat: &str, is_path_matcher: bool) -> anyhow::Result<Regex> 
     Ok(RegexBuilder::new(glob.regex()).build()?)
 }
 
-#[derive(Debug, Clone)]
-pub enum FrameOrExceptionMatcher<F, E> {
-    Frame(F),
-    Exception(E),
+#[derive(Clone)]
+pub enum Matcher {
+    Frame(Arc<dyn FrameMatcher>),
+    Exception(Arc<dyn ExceptionMatcher>),
 }
-
-pub type Matcher = FrameOrExceptionMatcher<Arc<dyn FrameMatcher>, Arc<dyn ExceptionMatcher>>;
 
 pub fn get_matcher(negated: bool, matcher_type: &str, argument: &str) -> anyhow::Result<Matcher> {
     // TODO: cache based on (negated, matcher_type, argument)
     let matcher = match matcher_type {
         // Field matchers
-        "stack.module" | "module" => FrameOrExceptionMatcher::Frame(frame_matcher(
+        "stack.module" | "module" => Matcher::Frame(frame_matcher(
             negated,
             FrameFieldMatch::new(FrameField::Module, argument)?,
         )),
-        "stack.function" | "function" => FrameOrExceptionMatcher::Frame(frame_matcher(
+        "stack.function" | "function" => Matcher::Frame(frame_matcher(
             negated,
             FrameFieldMatch::new(FrameField::Function, argument)?,
         )),
-        "category" => FrameOrExceptionMatcher::Frame(frame_matcher(
+        "category" => Matcher::Frame(frame_matcher(
             negated,
             FrameFieldMatch::new(FrameField::Category, argument)?,
         )),
 
         // Path matchers
-        "stack.abs_path" | "path" => FrameOrExceptionMatcher::Frame(frame_matcher(
+        "stack.abs_path" | "path" => Matcher::Frame(frame_matcher(
             negated,
             PathLikeMatch::new(FrameField::Path, argument)?,
         )),
-        "stack.package" | "package" => FrameOrExceptionMatcher::Frame(frame_matcher(
+        "stack.package" | "package" => Matcher::Frame(frame_matcher(
             negated,
             PathLikeMatch::new(FrameField::Package, argument)?,
         )),
 
         // Family matcher
-        "family" => {
-            FrameOrExceptionMatcher::Frame(frame_matcher(negated, FamilyMatch::new(argument)))
-        }
+        "family" => Matcher::Frame(frame_matcher(negated, FamilyMatch::new(argument))),
 
         // InApp matcher
-        "app" => FrameOrExceptionMatcher::Frame(frame_matcher(negated, InAppMatch::new(argument)?)),
+        "app" => Matcher::Frame(frame_matcher(negated, InAppMatch::new(argument)?)),
 
         // Exception matchers
-        "error.type" | "type" => FrameOrExceptionMatcher::Exception(exception_matcher(
+        "error.type" | "type" => Matcher::Exception(exception_matcher(
             negated,
             ExceptionTypeMatch::new(argument)?,
         )),
-        "error.value" | "value" => FrameOrExceptionMatcher::Exception(exception_matcher(
+        "error.value" | "value" => Matcher::Exception(exception_matcher(
             negated,
             ExceptionValueMatch::new(argument)?,
         )),
-        "error.mechanism" | "mechanism" => FrameOrExceptionMatcher::Exception(exception_matcher(
+        "error.mechanism" | "mechanism" => Matcher::Exception(exception_matcher(
             negated,
             ExceptionMechanismMatch::new(argument)?,
         )),
@@ -450,8 +446,8 @@ mod tests {
             .iter()
             .map(|matcher| get_matcher(matcher.negation, &matcher.ty, &matcher.argument).unwrap())
             .filter_map(|m| match m {
-                FrameOrExceptionMatcher::Frame(m) => Some(m),
-                FrameOrExceptionMatcher::Exception(_) => None,
+                Matcher::Frame(m) => Some(m),
+                Matcher::Exception(_) => None,
             })
             .collect();
 

@@ -3,9 +3,7 @@ use std::{iter, sync::Arc};
 use super::{
     actions::Action,
     grammar::{RawMatcher, RawRule},
-    matchers::{
-        get_matcher, ExceptionData, ExceptionMatcher, Frame, FrameMatcher, FrameOrExceptionMatcher,
-    },
+    matchers::{get_matcher, ExceptionData, ExceptionMatcher, Frame, FrameMatcher, Matcher},
 };
 
 #[derive(Clone)]
