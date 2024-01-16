@@ -19,5 +19,6 @@ pyo3 = { version = "0.20.0", features = [
     "abi3-py38",
 ] }
 regex = "1.10.2"
+serde_json = "1.0.111"
 smol_str = "0.2.0"
 symbolic = { version = "12.8.0", features = [] }

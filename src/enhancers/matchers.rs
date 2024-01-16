@@ -1,33 +1,115 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use globset::GlobBuilder;
 use regex::bytes::{Regex, RegexBuilder};
 use smol_str::SmolStr;
 
-#[derive(Debug, Clone)]
+type StringField = SmolStr;
+
+#[derive(Debug, Clone, Default)]
 pub struct Frame {
-    // TODO:
-    fields: HashMap<&'static str, &'static str>,
+    category: Option<StringField>,
+    family: Option<StringField>,
+    function: Option<StringField>,
+    in_app: bool,
+    module: Option<StringField>,
+    package: Option<StringField>,
+    path: Option<StringField>,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum FrameField {
+    Category,
+    Family,
+    Function,
+    Module,
+    Package,
+    Path,
 }
 
 impl Frame {
-    fn get_field(&self, field: &str) -> Option<&str> {
-        self.fields.get(field).copied()
+    fn get_field(&self, field: FrameField) -> Option<&str> {
+        match field {
+            FrameField::Category => self.category.as_deref(),
+            FrameField::Family => self.family.as_deref(),
+            FrameField::Function => self.function.as_deref(),
+            FrameField::Module => self.module.as_deref(),
+            FrameField::Package => self.package.as_deref(),
+            FrameField::Path => self.path.as_deref(),
+        }
+    }
+
+    // TODO:
+    fn from_py_object() -> Self {
+        /*
+        def create_match_frame(frame_data: dict, platform: Optional[str]) -> dict:
+            """Create flat dict of values relevant to matchers"""
+            match_frame = dict(
+                category=get_path(frame_data, "data", "category"),
+                family=get_behavior_family_for_platform(frame_data.get("platform") or platform),
+                function=_get_function_name(frame_data, platform),
+                in_app=frame_data.get("in_app") or False,
+                module=get_path(frame_data, "module"),
+                package=frame_data.get("package"),
+                path=frame_data.get("abs_path") or frame_data.get("filename"),
+            )
+
+            for key in list(match_frame.keys()):
+                value = match_frame[key]
+                if isinstance(value, (bytes, str)):
+                    if key in ("package", "path"):
+                        value = match_frame[key] = value.lower()
+
+                    if isinstance(value, str):
+                        match_frame[key] = value.encode("utf-8")
+
+            return match_frame
+              */
+        Self::default()
+    }
+
+    #[cfg(test)]
+    fn from_test(raw_frame: serde_json::Value, platform: Option<&str>) -> Self {
+        let mut frame = Self::default();
+
+        frame.category = raw_frame
+            .pointer("/data/category")
+            .and_then(|s| s.as_str())
+            .map(SmolStr::new);
+        frame.family = raw_frame
+            .get("platform")
+            .and_then(|s| s.as_str())
+            .or(platform)
+            .map(SmolStr::new);
+        frame.function = raw_frame
+            .get("function")
+            .and_then(|s| s.as_str())
+            .map(SmolStr::new);
+        frame.in_app = raw_frame
+            .get("in_app")
+            .and_then(|s| s.as_bool())
+            .unwrap_or_default();
+
+        frame.module = raw_frame
+            .get("module")
+            .and_then(|s| s.as_str())
+            .map(SmolStr::new);
+
+        frame.package = raw_frame
+            .get("package")
+            .and_then(|s| s.as_str())
+            .map(|s| SmolStr::new(&s.to_lowercase()));
+
+        frame.path = raw_frame
+            .get("abs_path")
+            .or(raw_frame.get("filename"))
+            .and_then(|s| s.as_str())
+            .map(|s| SmolStr::new(&s.to_lowercase()));
+
+        frame
     }
 }
-
-/*
-MATCHERS = {
-    # discover field names
-    # fingerprinting specific fields
-
-
-        if value in ("1", "yes", "true"):
-            return True
-        elif value in ("0", "no", "false"):
-            return False
-*/
 
 fn boolean_value(value: &str) -> bool {
     matches!(value, "1" | "yes" | "true")
@@ -60,25 +142,25 @@ pub fn get_matcher(negated: bool, matcher_type: &str, argument: &str) -> anyhow:
         // Field matchers
         "stack.module" | "module" => FrameOrExceptionMatcher::Frame(frame_matcher(
             negated,
-            FrameFieldMatch::new("module", argument)?,
+            FrameFieldMatch::new(FrameField::Module, argument)?,
         )),
         "stack.function" | "function" => FrameOrExceptionMatcher::Frame(frame_matcher(
             negated,
-            FrameFieldMatch::new("function", argument)?,
+            FrameFieldMatch::new(FrameField::Function, argument)?,
         )),
         "category" => FrameOrExceptionMatcher::Frame(frame_matcher(
             negated,
-            FrameFieldMatch::new("category", argument)?,
+            FrameFieldMatch::new(FrameField::Category, argument)?,
         )),
 
         // Path matchers
         "stack.abs_path" | "path" => FrameOrExceptionMatcher::Frame(frame_matcher(
             negated,
-            PathLikeMatch::new("path", argument)?,
+            PathLikeMatch::new(FrameField::Path, argument)?,
         )),
         "stack.package" | "package" => FrameOrExceptionMatcher::Frame(frame_matcher(
             negated,
-            PathLikeMatch::new("package", argument)?,
+            PathLikeMatch::new(FrameField::Package, argument)?,
         )),
 
         // Family matcher
@@ -121,7 +203,7 @@ pub trait FrameMatcher {
 }
 
 trait SimpleFieldMatcher {
-    fn field(&self) -> &str;
+    fn field(&self) -> FrameField;
     fn matches_value(&self, value: &str) -> bool;
 }
 
@@ -160,12 +242,12 @@ fn frame_matcher<M: FrameMatcher + 'static>(negated: bool, matcher: M) -> Arc<dy
 
 #[derive(Debug, Clone)]
 struct FrameFieldMatch {
-    field: &'static str, // function, module, category
+    field: FrameField, // function, module, category
     pattern: Regex,
 }
 
 impl FrameFieldMatch {
-    fn new(field: &'static str, pattern: &str) -> anyhow::Result<Self> {
+    fn new(field: FrameField, pattern: &str) -> anyhow::Result<Self> {
         let pattern = translate_pattern(pattern, false)?;
 
         Ok(Self { field, pattern })
@@ -173,7 +255,7 @@ impl FrameFieldMatch {
 }
 
 impl SimpleFieldMatcher for FrameFieldMatch {
-    fn field(&self) -> &str {
+    fn field(&self) -> FrameField {
         self.field
     }
     fn matches_value(&self, value: &str) -> bool {
@@ -183,12 +265,12 @@ impl SimpleFieldMatcher for FrameFieldMatch {
 
 #[derive(Debug, Clone)]
 struct PathLikeMatch {
-    field: &'static str, // package, path
-    pattern: Regex,      // translate_pattern(true)
+    field: FrameField, // package, path
+    pattern: Regex,    // translate_pattern(true)
 }
 
 impl PathLikeMatch {
-    fn new(field: &'static str, pattern: &str) -> anyhow::Result<Self> {
+    fn new(field: FrameField, pattern: &str) -> anyhow::Result<Self> {
         let pattern = translate_pattern(pattern, true)?;
 
         Ok(Self { field, pattern })
@@ -196,7 +278,7 @@ impl PathLikeMatch {
 }
 
 impl SimpleFieldMatcher for PathLikeMatch {
-    fn field(&self) -> &str {
+    fn field(&self) -> FrameField {
         self.field
     }
 
@@ -231,8 +313,8 @@ impl FamilyMatch {
 }
 
 impl SimpleFieldMatcher for FamilyMatch {
-    fn field(&self) -> &str {
-        "family"
+    fn field(&self) -> FrameField {
+        FrameField::Family
     }
 
     fn matches_value(&self, value: &str) -> bool {
@@ -255,14 +337,13 @@ impl InAppMatch {
     }
 }
 
-impl SimpleFieldMatcher for InAppMatch {
-    fn field(&self) -> &str {
-        "in_app"
-    }
+impl FrameMatcher for InAppMatch {
+    fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
+        let Some(frame) = frames.get(idx) else {
+            return false;
+        };
 
-    fn matches_value(&self, value: &str) -> bool {
-        // TODO!!!
-        boolean_value(value) == self.expected
+        frame.in_app == self.expected
     }
 }
 
