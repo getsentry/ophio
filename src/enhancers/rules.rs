@@ -1,61 +1,82 @@
-use std::iter;
+use std::fmt;
 use std::sync::Arc;
 
 use super::actions::Action;
 use super::frame::Frame;
 use super::grammar::{RawMatcher, RawRule};
-use super::matchers::{get_matcher, ExceptionData, ExceptionMatcher, FrameMatcher, Matcher};
+use super::matchers::{get_matcher, ExceptionMatcher, FrameMatcher, Matcher};
+use super::ExceptionData;
 
 #[derive(Clone)]
-struct Rule {
+pub struct Rule {
     frame_matchers: Vec<Arc<dyn FrameMatcher>>,
     exception_matchers: Vec<Arc<dyn ExceptionMatcher>>,
     actions: Vec<Action>,
 }
 
+impl fmt::Debug for Rule {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Rule")
+            .field("frame_matchers", &self.frame_matchers.len())
+            .field("exception_matchers", &self.exception_matchers.len())
+            .field("actions", &self.actions)
+            .finish()
+    }
+}
+
+fn convert_matcher(raw: RawMatcher) -> anyhow::Result<Matcher> {
+    get_matcher(raw.negation, &raw.ty, &raw.argument)
+}
+
 impl Rule {
-    /*fn from_raw(raw: RawRule) -> anyhow::Result<Self> {
+    pub fn from_raw(raw: RawRule) -> anyhow::Result<Self> {
         let mut frame_matchers = Vec::new();
         let mut exception_matchers = Vec::new();
-        let mut actions = Vec::new();
-
-        if let Some(RawMatcher {
-            negation,
-            ty,
-            argument,
-        }) = raw.matchers.caller_matcher
-        {
-            match get_matcher(negation, ty, argument)? {
-                FrameOrExceptionMatcher::Frame(_) => todo!(),
-                FrameOrExceptionMatcher::Exception(_) => todo!(),
+        let mut add_matcher = |matcher: RawMatcher| -> anyhow::Result<()> {
+            match convert_matcher(matcher)? {
+                Matcher::Frame(matcher) => frame_matchers.push(matcher),
+                Matcher::Exception(matcher) => exception_matchers.push(matcher),
             }
-        }
-    }*/
 
-    fn get_actions(
-        &self,
-        frames: &[Frame],
-        exception_data: &ExceptionData,
-    ) -> Vec<(usize, Action)> {
-        if self
-            .exception_matchers
+            Ok(())
+        };
+
+        if let Some(matcher) = raw.matchers.caller_matcher {
+            todo!()
+        }
+
+        for matcher in raw.matchers.matchers {
+            add_matcher(matcher)?;
+        }
+
+        if let Some(matcher) = raw.matchers.callee_matcher {
+            todo!()
+        }
+
+        let actions = raw.actions.into_iter().map(Action::from_raw).collect();
+
+        Ok(Self {
+            frame_matchers,
+            exception_matchers,
+            actions,
+        })
+    }
+
+    pub fn matches_exception(&self, exception_data: &ExceptionData) -> bool {
+        self.exception_matchers
             .iter()
-            .any(|m| !m.matches_exception(exception_data))
-        {
-            return Vec::new();
-        }
+            .all(|m| m.matches_exception(exception_data))
+    }
 
-        let mut res = Vec::new();
-        for idx in 0..frames.len() {
-            if self
-                .frame_matchers
-                .iter()
-                .all(|m| m.matches_frame(frames, idx))
-            {
-                res.extend(iter::repeat(idx).zip(self.actions.iter().cloned()))
-            }
-        }
+    pub fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
+        self.frame_matchers
+            .iter()
+            .all(|m| m.matches_frame(frames, idx))
+    }
 
-        res
+    pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize) {
+        for action in &self.actions {
+            action.apply_modifications_to_frame(frames, idx)
+        }
     }
 }

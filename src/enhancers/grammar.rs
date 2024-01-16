@@ -44,6 +44,7 @@ _        = space*
 use smol_str::SmolStr;
 
 pub use nom::parse_enhancers;
+pub use nom::rule;
 
 #[derive(Debug)]
 pub struct RawMatcher {
@@ -191,7 +192,7 @@ mod nom {
         Ok((input, actions))
     }
 
-    fn rule(input: &str) -> anyhow::Result<RawRule> {
+    pub fn rule(input: &str) -> anyhow::Result<RawRule> {
         let (_input, (matchers, actions)) = all_consuming(pair(matchers, actions))(input)
             .finish()
             .map_err(|e| anyhow::Error::msg(e.to_string()))?;
@@ -304,7 +305,7 @@ mod chumsky {
             .at_least(1)
     }
 
-    fn rule(input: &str) -> anyhow::Result<RawRule> {
+    pub fn rule(input: &str) -> anyhow::Result<RawRule> {
         let (matchers, actions) = matchers()
             .then(actions())
             .parse(input)

@@ -6,6 +6,7 @@ use regex::bytes::{Regex, RegexBuilder};
 use smol_str::SmolStr;
 
 use super::frame::{Frame, FrameField};
+use super::ExceptionData;
 
 fn translate_pattern(pat: &str, is_path_matcher: bool) -> anyhow::Result<Regex> {
     let pat = if is_path_matcher {
@@ -26,8 +27,8 @@ pub enum Matcher {
     Exception(Arc<dyn ExceptionMatcher>),
 }
 
+// TODO: take `caller/e` as argument
 pub fn get_matcher(negated: bool, matcher_type: &str, argument: &str) -> anyhow::Result<Matcher> {
-    // TODO: cache based on (negated, matcher_type, argument)
     let matcher = match matcher_type {
         // Field matchers
         "stack.module" | "module" => Matcher::Frame(frame_matcher(
@@ -79,13 +80,6 @@ pub fn get_matcher(negated: bool, matcher_type: &str, argument: &str) -> anyhow:
     Ok(matcher)
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct ExceptionData {
-    ty: Option<String>,
-    value: Option<String>,
-    mechanism: Option<String>,
-}
-
 pub trait FrameMatcher {
     fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool;
 }
@@ -121,6 +115,7 @@ impl<M: FrameMatcher> FrameMatcher for NegationWrapper<M> {
     }
 }
 
+// TODO: take `caller/e` as argument
 fn frame_matcher<M: FrameMatcher + 'static>(negated: bool, matcher: M) -> Arc<dyn FrameMatcher> {
     Arc::new(NegationWrapper {
         negated,
