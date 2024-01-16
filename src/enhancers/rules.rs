@@ -16,7 +16,7 @@ struct Rule {
 }
 
 impl Rule {
-    fn from_raw(raw: RawRule) -> anyhow::Result<Self> {
+    /*fn from_raw(raw: RawRule) -> anyhow::Result<Self> {
         let mut frame_matchers = Vec::new();
         let mut exception_matchers = Vec::new();
         let mut actions = Vec::new();
@@ -32,7 +32,8 @@ impl Rule {
                 FrameOrExceptionMatcher::Exception(_) => todo!(),
             }
         }
-    }
+    }*/
+
     fn get_actions(
         &self,
         frames: &[Frame],

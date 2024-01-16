@@ -70,7 +70,7 @@ impl Frame {
     }
 
     #[cfg(test)]
-    fn from_test(raw_frame: serde_json::Value, platform: Option<&str>) -> Self {
+    fn from_test(raw_frame: serde_json::Value, platform: &str) -> Self {
         let mut frame = Self::default();
 
         frame.category = raw_frame
@@ -80,7 +80,7 @@ impl Frame {
         frame.family = raw_frame
             .get("platform")
             .and_then(|s| s.as_str())
-            .or(platform)
+            .or(Some(platform))
             .map(SmolStr::new);
         frame.function = raw_frame
             .get("function")
@@ -99,20 +99,16 @@ impl Frame {
         frame.package = raw_frame
             .get("package")
             .and_then(|s| s.as_str())
-            .map(|s| SmolStr::new(&s.to_lowercase()));
+            .map(|s| SmolStr::new(s.to_lowercase()));
 
         frame.path = raw_frame
             .get("abs_path")
             .or(raw_frame.get("filename"))
             .and_then(|s| s.as_str())
-            .map(|s| SmolStr::new(&s.to_lowercase()));
+            .map(|s| SmolStr::new(s.to_lowercase()));
 
         frame
     }
-}
-
-fn boolean_value(value: &str) -> bool {
-    matches!(value, "1" | "yes" | "true")
 }
 
 fn translate_pattern(pat: &str, is_path_matcher: bool) -> anyhow::Result<Regex> {
@@ -439,6 +435,8 @@ fn exception_matcher<M: ExceptionMatcher + 'static>(
 
 #[cfg(test)]
 mod tests {
+    use serde_json::json;
+
     use crate::enhancers::grammar::parse_enhancers;
 
     use super::*;
@@ -469,37 +467,35 @@ mod tests {
     fn path_matching() {
         let matcher = create_matcher("path:**/test.js              +app");
 
-        assert!(matcher(Frame {
-            fields: [
-                ("abs_path", "http://example.com/foo/test.js"),
-                ("filename", "/foo/test.js")
-            ]
-            .into()
-        }));
+        assert!(matcher(Frame::from_test(
+            json!({"abs_path": "http://example.com/foo/test.js", "filename": "/foo/test.js"}),
+            "javascript"
+        )));
 
-        assert!(!matcher(Frame {
-            fields: [
-                ("abs_path", "http://example.com/foo/bar.js"),
-                ("filename", "/foo/bar.js")
-            ]
-            .into()
-        }));
+        assert!(!matcher(Frame::from_test(
+            json!({"abs_path": "http://example.com/foo/bar.js", "filename": "/foo/bar.js"}),
+            "javascript"
+        )));
 
-        assert!(matcher(Frame {
-            fields: [("abs_path", "http://example.com/foo/test.js")].into()
-        }));
+        assert!(matcher(Frame::from_test(
+            json!({"abs_path": "http://example.com/foo/test.js"}),
+            "javascript"
+        )));
 
-        assert!(!matcher(Frame {
-            fields: [("filename", "/foo/bar.js")].into()
-        }));
+        assert!(!matcher(Frame::from_test(
+            json!({"filename": "/foo/bar.js"}),
+            "javascript"
+        )));
 
-        assert!(matcher(Frame {
-            fields: [("abs_path", "http://example.com/foo/TEST.js")].into()
-        }));
+        assert!(matcher(Frame::from_test(
+            json!({"abs_path": "http://example.com/foo/TEST.js"}),
+            "javascript"
+        )));
 
-        assert!(!matcher(Frame {
-            fields: [("abs_path", "http://example.com/foo/bar.js")].into()
-        }));
+        assert!(!matcher(Frame::from_test(
+            json!({"abs_path": "http://example.com/foo/bar.js"}),
+            "javascript"
+        )));
     }
 
     #[test]
@@ -507,32 +503,23 @@ mod tests {
         let js_matcher = create_matcher("family:javascript path:**/test.js              +app");
         let native_matcher = create_matcher("family:native function:std::*                  -app");
 
-        assert!(js_matcher(Frame {
-            fields: [
-                ("abs_path", "http://example.com/foo/TEST.js"),
-                ("family", "javascript")
-            ]
-            .into()
-        }));
-        assert!(!js_matcher(Frame {
-            fields: [
-                ("abs_path", "http://example.com/foo/TEST.js"),
-                ("family", "native")
-            ]
-            .into()
-        }));
+        assert!(js_matcher(Frame::from_test(
+            json!({"abs_path": "http://example.com/foo/TEST.js"}),
+            "javascript"
+        )));
+        assert!(!js_matcher(Frame::from_test(
+            json!({"abs_path": "http://example.com/foo/TEST.js"}),
+            "native"
+        )));
 
-        assert!(!native_matcher(Frame {
-            fields: [
-                ("abs_path", "http://example.com/foo/TEST.js"),
-                ("function", "std::whatever"),
-                ("family", "javascript")
-            ]
-            .into()
-        }));
-        assert!(native_matcher(Frame {
-            fields: [("function", "std::whatever"), ("family", "native")].into()
-        }));
+        assert!(!native_matcher(Frame::from_test(
+            json!({"abs_path": "http://example.com/foo/TEST.js", "function": "std::whatever"}),
+            "javascript"
+        )));
+        assert!(native_matcher(Frame::from_test(
+            json!({"function": "std::whatever"}),
+            "native"
+        )));
     }
 
     #[test]
@@ -540,39 +527,22 @@ mod tests {
         let yes_matcher = create_matcher("family:javascript path:**/test.js app:yes       +app");
         let no_matcher = create_matcher("family:native path:**/test.c app:no            -group");
 
-        // TODO:
-        assert!(yes_matcher(Frame {
-            fields: [
-                ("abs_path", "http://example.com/foo/TEST.js"),
-                ("family", "javascript"),
-                ("in_app", "true")
-            ]
-            .into()
-        }));
-        assert!(!yes_matcher(Frame {
-            fields: [
-                ("abs_path", "http://example.com/foo/TEST.js"),
-                ("family", "javascript"),
-                ("in_app", "false")
-            ]
-            .into()
-        }));
-        assert!(no_matcher(Frame {
-            fields: [
-                ("abs_path", "/test.c"),
-                ("family", "native"),
-                ("in_app", "false")
-            ]
-            .into()
-        }));
-        assert!(!no_matcher(Frame {
-            fields: [
-                ("abs_path", "/test.c"),
-                ("family", "native"),
-                ("in_app", "true")
-            ]
-            .into()
-        }));
+        assert!(yes_matcher(Frame::from_test(
+            json!({"abs_path": "http://example.com/foo/TEST.js", "in_app": true}),
+            "javascript"
+        )));
+        assert!(!yes_matcher(Frame::from_test(
+            json!({"abs_path": "http://example.com/foo/TEST.js", "in_app": false}),
+            "javascript"
+        )));
+        assert!(no_matcher(Frame::from_test(
+            json!({"abs_path": "/test.c", "in_app": false}),
+            "native"
+        )));
+        assert!(!no_matcher(Frame::from_test(
+            json!({"abs_path": "/test.c", "in_app":true}),
+            "native"
+        )));
     }
 
     #[test]
@@ -580,69 +550,50 @@ mod tests {
         let bundled_matcher =
             create_matcher("family:native package:/var/**/Frameworks/**                  -app");
 
-        assert!(bundled_matcher(Frame {
-            fields: [
-                ("package", "/var/containers/MyApp/Frameworks/libsomething"),
-                ("family", "native")
-            ]
-            .into()
-        }));
-        assert!(!bundled_matcher(Frame {
-            fields: [
-                ("package", "/var2/containers/MyApp/Frameworks/libsomething"),
-                ("family", "native")
-            ]
-            .into()
-        }));
-        assert!(!bundled_matcher(Frame {
-            fields: [
-                ("package", "/var/containers/MyApp/MacOs/MyApp"),
-                ("family", "native")
-            ]
-            .into()
-        }));
-        assert!(!bundled_matcher(Frame {
-            fields: [("package", "/usr/lib/linux-gate.so"), ("family", "native")].into()
-        }));
+        assert!(bundled_matcher(Frame::from_test(
+            json!({"package": "/var/containers/MyApp/Frameworks/libsomething"}),
+            "native"
+        )));
+        assert!(!bundled_matcher(Frame::from_test(
+            json!({"package": "/var2/containers/MyApp/Frameworks/libsomething"}),
+            "native"
+        )));
+        assert!(!bundled_matcher(Frame::from_test(
+            json!({"package": "/var/containers/MyApp/MacOs/MyApp"}),
+            "native"
+        )));
+        assert!(!bundled_matcher(Frame::from_test(
+            json!({"package": "/usr/lib/linux-gate.so"}),
+            "native"
+        )));
 
         let macos_matcher =
             create_matcher("family:native package:**/*.app/Contents/**                   +app");
 
-        assert!(macos_matcher(Frame {
-            fields: [
-                (
-                    "package",
-                    "/Applications/MyStuff.app/Contents/MacOS/MyStuff"
-                ),
-                ("family", "native")
-            ]
-            .into()
-        }));
+        assert!(macos_matcher(Frame::from_test(
+            json!({"package": "/Applications/MyStuff.app/Contents/MacOS/MyStuff"}),
+            "native"
+        )));
 
         let linux_matcher =
             create_matcher("family:native package:linux-gate.so                          -app");
 
-        assert!(linux_matcher(Frame {
-            fields: [("package", "linux-gate.so"), ("family", "native")].into()
-        }));
+        assert!(linux_matcher(Frame::from_test(
+            json!({"package": "linux-gate.so"}),
+            "native"
+        )));
 
         let windows_matcher =
             create_matcher("family:native package:?:/Windows/**                          -app");
 
-        assert!(windows_matcher(Frame {
-            fields: [
-                ("package", "D:\\Windows\\System32\\kernel32.dll"),
-                ("family", "native")
-            ]
-            .into()
-        }));
+        assert!(windows_matcher(Frame::from_test(
+            json!({"package": "D:\\Windows\\System32\\kernel32.dll"}),
+            "native"
+        )));
 
-        assert!(windows_matcher(Frame {
-            fields: [
-                ("package", "d:\\windows\\System32\\kernel32.dll"),
-                ("family", "native")
-            ]
-            .into()
-        }));
+        assert!(windows_matcher(Frame::from_test(
+            json!({"package": "d:\\windows\\System32\\kernel32.dll"}),
+            "native"
+        )));
     }
 }
