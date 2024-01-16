@@ -1,5 +1,6 @@
 use smol_str::SmolStr;
 
+use super::frame::Frame;
 use super::grammar::RawAction;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -21,6 +22,21 @@ pub struct FlagAction {
     flag: bool,
     ty: FlagActionType,
     range: Option<Range>,
+}
+
+impl FlagAction {
+    fn iter_frames<'f>(
+        &self,
+        frames: &'f mut [Frame],
+        idx: usize,
+    ) -> impl Iterator<Item = &'f mut Frame> {
+        let slice = match self.range {
+            Some(Range::Up) => frames.get_mut(idx + 1..),
+            Some(Range::Down) => frames.get_mut(..idx),
+            None => frames.get_mut(idx..idx + 1),
+        };
+        slice.unwrap_or_default().iter_mut()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -75,6 +91,30 @@ impl Action {
 
                 Self::Flag(FlagAction { flag, ty, range })
             }
+        }
+    }
+
+    fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize) {
+        match self {
+            Action::Flag(
+                action @ FlagAction {
+                    ty: FlagActionType::App,
+                    ..
+                },
+            ) => {
+                for frame in action.iter_frames(frames, idx) {
+                    frame.in_app = action.flag;
+                }
+            }
+            Action::Var(VarAction {
+                var: VarName::Category,
+                value,
+            }) => {
+                if let Some(frame) = frames.get_mut(idx) {
+                    frame.category = Some(value.clone())
+                }
+            }
+            _ => {}
         }
     }
 }
