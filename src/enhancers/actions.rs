@@ -94,6 +94,19 @@ impl Action {
         }
     }
 
+    pub fn is_modifier(&self) -> bool {
+        matches!(
+            self,
+            Action::Flag(FlagAction {
+                ty: FlagActionType::App,
+                ..
+            },) | Action::Var(VarAction {
+                var: VarName::Category,
+                ..
+            })
+        )
+    }
+
     pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize) {
         match self {
             Action::Flag(

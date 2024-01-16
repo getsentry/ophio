@@ -74,6 +74,10 @@ impl Rule {
             .all(|m| m.matches_frame(frames, idx))
     }
 
+    pub fn has_modifier_action(&self) -> bool {
+        self.actions.iter().any(|a| a.is_modifier())
+    }
+
     pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize) {
         for action in &self.actions {
             action.apply_modifications_to_frame(frames, idx)

@@ -19,11 +19,13 @@ pub struct ExceptionData {
 
 #[derive(Debug)]
 pub struct Enhancements {
-    rules: Vec<Rule>,
+    all_rules: Vec<Rule>,
+    modifier_rules: Vec<Rule>,
 }
+
 impl Enhancements {
     pub fn parse(input: &str) -> anyhow::Result<Self> {
-        let mut rules = vec![];
+        let mut all_rules = vec![];
 
         for line in input.lines() {
             let line = line.trim();
@@ -35,10 +37,19 @@ impl Enhancements {
 
             let raw_rule = rule(line)?;
             let rule = Rule::from_raw(raw_rule)?;
-            rules.push(rule);
+            all_rules.push(rule);
         }
 
-        Ok(Self { rules })
+        let modifier_rules = all_rules
+            .iter()
+            .filter(|r| r.has_modifier_action())
+            .cloned()
+            .collect();
+
+        Ok(Self {
+            all_rules,
+            modifier_rules,
+        })
     }
 
     pub fn apply_modifications_to_frames(
@@ -46,7 +57,7 @@ impl Enhancements {
         frames: &mut [Frame],
         exception_data: &ExceptionData,
     ) {
-        for rule in &self.rules {
+        for rule in &self.modifier_rules {
             if !rule.matches_exception(exception_data) {
                 continue;
             }
@@ -62,7 +73,7 @@ impl Enhancements {
 
 #[cfg(test)]
 mod tests {
-    use std::time::Instant;
+    use std::time::{Duration, Instant};
 
     use serde_json::Value;
 
@@ -121,11 +132,16 @@ mod tests {
         //dbg!(&stacktraces);
 
         let instant = Instant::now();
-        for _ in 0..=1_000 {
+        const ITERS: u64 = 1_000;
+        for _ in 0..=ITERS {
             for frames in &mut stacktraces {
                 enhancements.apply_modifications_to_frames(frames, &exception_data);
             }
         }
-        println!("Applied modifications in: {:?}", instant.elapsed());
+
+        let elapsed = instant.elapsed();
+        let per_iter = Duration::from_nanos(elapsed.as_nanos() as u64 / ITERS);
+
+        println!("Applied modifications in: {elapsed:?} / {per_iter:?} per application");
     }
 }
