@@ -43,6 +43,10 @@ impl Frame {
     // TODO:
     fn from_py_object() -> Self {
         /*
+
+        // normalize path:
+        let mut value = value.replace('\\', "/");
+
         def create_match_frame(frame_data: dict, platform: Optional[str]) -> dict:
             """Create flat dict of values relevant to matchers"""
             match_frame = dict(
@@ -68,6 +72,9 @@ impl Frame {
               */
         Self::default()
     }
+
+    // TODO:
+    fn apply_modifications_to_py_object(&self) {}
 
     #[cfg(test)]
     fn from_test(raw_frame: serde_json::Value, platform: &str) -> Self {
@@ -105,7 +112,7 @@ impl Frame {
             .get("abs_path")
             .or(raw_frame.get("filename"))
             .and_then(|s| s.as_str())
-            .map(|s| SmolStr::new(s.to_lowercase()));
+            .map(|s| SmolStr::new(s.replace('\\', "/").to_lowercase()));
 
         frame
     }
@@ -258,7 +265,7 @@ impl SimpleFieldMatcher for FrameFieldMatch {
 #[derive(Debug, Clone)]
 struct PathLikeMatch {
     field: FrameField, // package, path
-    pattern: Regex,    // translate_pattern(true)
+    pattern: Regex,
 }
 
 impl PathLikeMatch {
@@ -275,14 +282,12 @@ impl SimpleFieldMatcher for PathLikeMatch {
     }
 
     fn matches_value(&self, value: &str) -> bool {
-        // normalize path:
-        let mut value = value.replace('\\', "/");
-
         if self.pattern.is_match(value.as_bytes()) {
             return true;
         }
         if !value.starts_with('/') {
-            value.insert(0, '/');
+            // TODO: avoid
+            let value = format!("/{value}");
             return self.pattern.is_match(value.as_bytes());
         }
         false
