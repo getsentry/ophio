@@ -26,48 +26,74 @@ pub enum Matcher {
 }
 
 // TODO: take `caller/e` as argument
-pub fn get_matcher(negated: bool, matcher_type: &str, argument: &str) -> anyhow::Result<Matcher> {
+pub fn get_matcher(
+    negated: bool,
+    matcher_type: &str,
+    argument: &str,
+    caller: bool,
+    callee: bool,
+) -> anyhow::Result<Matcher> {
     let matcher = match matcher_type {
         // Field matchers
-        "stack.module" | "module" => Matcher::Frame(frame_matcher(
+        "stack.module" | "module" => Matcher::Frame(create_frame_matcher(
             negated,
+            caller,
+            callee,
             FrameFieldMatch::new(FrameField::Module, argument)?,
         )),
-        "stack.function" | "function" => Matcher::Frame(frame_matcher(
+        "stack.function" | "function" => Matcher::Frame(create_frame_matcher(
             negated,
+            caller,
+            callee,
             FrameFieldMatch::new(FrameField::Function, argument)?,
         )),
-        "category" => Matcher::Frame(frame_matcher(
+        "category" => Matcher::Frame(create_frame_matcher(
             negated,
+            caller,
+            callee,
             FrameFieldMatch::new(FrameField::Category, argument)?,
         )),
 
         // Path matchers
-        "stack.abs_path" | "path" => Matcher::Frame(frame_matcher(
+        "stack.abs_path" | "path" => Matcher::Frame(create_frame_matcher(
             negated,
+            caller,
+            callee,
             PathLikeMatch::new(FrameField::Path, argument)?,
         )),
-        "stack.package" | "package" => Matcher::Frame(frame_matcher(
+        "stack.package" | "package" => Matcher::Frame(create_frame_matcher(
             negated,
+            caller,
+            callee,
             PathLikeMatch::new(FrameField::Package, argument)?,
         )),
 
         // Family matcher
-        "family" => Matcher::Frame(frame_matcher(negated, FamilyMatch::new(argument))),
+        "family" => Matcher::Frame(create_frame_matcher(
+            negated,
+            caller,
+            callee,
+            FamilyMatch::new(argument),
+        )),
 
         // InApp matcher
-        "app" => Matcher::Frame(frame_matcher(negated, InAppMatch::new(argument)?)),
+        "app" => Matcher::Frame(create_frame_matcher(
+            negated,
+            caller,
+            callee,
+            InAppMatch::new(argument)?,
+        )),
 
         // Exception matchers
-        "error.type" | "type" => Matcher::Exception(exception_matcher(
+        "error.type" | "type" => Matcher::Exception(create_exception_matcher(
             negated,
             ExceptionTypeMatch::new(argument)?,
         )),
-        "error.value" | "value" => Matcher::Exception(exception_matcher(
+        "error.value" | "value" => Matcher::Exception(create_exception_matcher(
             negated,
             ExceptionValueMatch::new(argument)?,
         )),
-        "error.mechanism" | "mechanism" => Matcher::Exception(exception_matcher(
+        "error.mechanism" | "mechanism" => Matcher::Exception(create_exception_matcher(
             negated,
             ExceptionMechanismMatch::new(argument)?,
         )),
@@ -113,22 +139,38 @@ impl<M: FrameMatcher> FrameMatcher for NegationWrapper<M> {
     }
 }
 
-// TODO: take `caller/e` as argument
-fn frame_matcher<M: FrameMatcher + 'static>(negated: bool, matcher: M) -> Arc<dyn FrameMatcher> {
-    Arc::new(NegationWrapper {
-        negated,
-        inner: matcher,
-    })
+pub fn create_frame_matcher<M: FrameMatcher + 'static>(
+    negated: bool,
+    caller: bool,
+    callee: bool,
+    matcher: M,
+) -> Arc<dyn FrameMatcher> {
+    if caller {
+        Arc::new(CallerMatch(NegationWrapper {
+            negated,
+            inner: matcher,
+        }))
+    } else if callee {
+        Arc::new(CalleeMatch(NegationWrapper {
+            negated,
+            inner: matcher,
+        }))
+    } else {
+        Arc::new(NegationWrapper {
+            negated,
+            inner: matcher,
+        })
+    }
 }
 
 #[derive(Debug, Clone)]
-struct FrameFieldMatch {
+pub struct FrameFieldMatch {
     field: FrameField, // function, module, category
     pattern: Regex,
 }
 
 impl FrameFieldMatch {
-    fn new(field: FrameField, pattern: &str) -> anyhow::Result<Self> {
+    pub fn new(field: FrameField, pattern: &str) -> anyhow::Result<Self> {
         let pattern = translate_pattern(pattern, false)?;
 
         Ok(Self { field, pattern })
@@ -145,13 +187,13 @@ impl SimpleFieldMatcher for FrameFieldMatch {
 }
 
 #[derive(Debug, Clone)]
-struct PathLikeMatch {
+pub struct PathLikeMatch {
     field: FrameField, // package, path
     pattern: Regex,
 }
 
 impl PathLikeMatch {
-    fn new(field: FrameField, pattern: &str) -> anyhow::Result<Self> {
+    pub fn new(field: FrameField, pattern: &str) -> anyhow::Result<Self> {
         let pattern = translate_pattern(pattern, true)?;
 
         Ok(Self { field, pattern })
@@ -205,12 +247,12 @@ impl SimpleFieldMatcher for FamilyMatch {
 }
 
 #[derive(Debug, Clone)]
-struct InAppMatch {
+pub struct InAppMatch {
     expected: bool,
 }
 
 impl InAppMatch {
-    fn new(expected: &str) -> anyhow::Result<Self> {
+    pub fn new(expected: &str) -> anyhow::Result<Self> {
         match expected {
             "1" | "true" | "yes" => Ok(Self { expected: true }),
             "0" | "false" | "no" => Ok(Self { expected: false }),
@@ -230,7 +272,7 @@ impl FrameMatcher for InAppMatch {
 }
 
 #[derive(Debug, Clone)]
-struct CallerMatch<M>(M);
+pub struct CallerMatch<M>(M);
 
 impl<M: FrameMatcher> FrameMatcher for CallerMatch<M> {
     fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
@@ -239,7 +281,7 @@ impl<M: FrameMatcher> FrameMatcher for CallerMatch<M> {
 }
 
 #[derive(Debug, Clone)]
-struct CalleeMatch<M>(M);
+pub struct CalleeMatch<M>(M);
 
 impl<M: FrameMatcher> FrameMatcher for CalleeMatch<M> {
     fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
@@ -251,12 +293,12 @@ pub trait ExceptionMatcher {
     fn matches_exception(&self, exception_data: &ExceptionData) -> bool;
 }
 
-struct ExceptionTypeMatch {
+pub struct ExceptionTypeMatch {
     pattern: Regex,
 }
 
 impl ExceptionTypeMatch {
-    fn new(pattern: &str) -> anyhow::Result<Self> {
+    pub fn new(pattern: &str) -> anyhow::Result<Self> {
         let pattern = translate_pattern(pattern, false)?;
         Ok(Self { pattern })
     }
@@ -269,12 +311,12 @@ impl ExceptionMatcher for ExceptionTypeMatch {
     }
 }
 
-struct ExceptionValueMatch {
+pub struct ExceptionValueMatch {
     pattern: Regex,
 }
 
 impl ExceptionValueMatch {
-    fn new(pattern: &str) -> anyhow::Result<Self> {
+    pub fn new(pattern: &str) -> anyhow::Result<Self> {
         let pattern = translate_pattern(pattern, false)?;
         Ok(Self { pattern })
     }
@@ -287,12 +329,12 @@ impl ExceptionMatcher for ExceptionValueMatch {
     }
 }
 
-struct ExceptionMechanismMatch {
+pub struct ExceptionMechanismMatch {
     pattern: Regex,
 }
 
 impl ExceptionMechanismMatch {
-    fn new(pattern: &str) -> anyhow::Result<Self> {
+    pub fn new(pattern: &str) -> anyhow::Result<Self> {
         let pattern = translate_pattern(pattern, false)?;
         Ok(Self { pattern })
     }
@@ -311,7 +353,7 @@ impl<M: ExceptionMatcher> ExceptionMatcher for NegationWrapper<M> {
     }
 }
 
-fn exception_matcher<M: ExceptionMatcher + 'static>(
+pub fn create_exception_matcher<M: ExceptionMatcher + 'static>(
     negated: bool,
     matcher: M,
 ) -> Arc<dyn ExceptionMatcher> {
@@ -331,17 +373,8 @@ mod tests {
 
     fn create_matcher(rules: &str) -> impl Fn(Frame) -> bool {
         let rules = parse_enhancers(rules).unwrap();
-        let rule = &rules[0];
-        let matchers: Vec<_> = rule
-            .matchers
-            .matchers
-            .iter()
-            .map(|matcher| get_matcher(matcher.negation, &matcher.ty, &matcher.argument).unwrap())
-            .filter_map(|m| match m {
-                Matcher::Frame(m) => Some(m),
-                Matcher::Exception(_) => None,
-            })
-            .collect();
+        let rule = rules.all_rules.into_iter().next().unwrap();
+        let matchers = rule.frame_matchers;
 
         move |frame: Frame| {
             let frames = &[frame];

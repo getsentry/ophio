@@ -9,9 +9,9 @@ use super::ExceptionData;
 
 #[derive(Clone)]
 pub struct Rule {
-    frame_matchers: Vec<Arc<dyn FrameMatcher>>,
-    exception_matchers: Vec<Arc<dyn ExceptionMatcher>>,
-    actions: Vec<Action>,
+    pub frame_matchers: Vec<Arc<dyn FrameMatcher>>,
+    pub exception_matchers: Vec<Arc<dyn ExceptionMatcher>>,
+    pub actions: Vec<Action>,
 }
 
 impl fmt::Debug for Rule {
@@ -24,44 +24,7 @@ impl fmt::Debug for Rule {
     }
 }
 
-fn convert_matcher(raw: RawMatcher) -> anyhow::Result<Matcher> {
-    get_matcher(raw.negation, &raw.ty, &raw.argument)
-}
-
 impl Rule {
-    pub fn from_raw(raw: RawRule) -> anyhow::Result<Self> {
-        let mut frame_matchers = Vec::new();
-        let mut exception_matchers = Vec::new();
-        let mut add_matcher = |matcher: RawMatcher| -> anyhow::Result<()> {
-            match convert_matcher(matcher)? {
-                Matcher::Frame(matcher) => frame_matchers.push(matcher),
-                Matcher::Exception(matcher) => exception_matchers.push(matcher),
-            }
-
-            Ok(())
-        };
-
-        if let Some(matcher) = raw.matchers.caller_matcher {
-            //todo!()
-        }
-
-        for matcher in raw.matchers.matchers {
-            add_matcher(matcher)?;
-        }
-
-        if let Some(matcher) = raw.matchers.callee_matcher {
-            //todo!()
-        }
-
-        let actions = raw.actions.into_iter().map(Action::from_raw).collect();
-
-        Ok(Self {
-            frame_matchers,
-            exception_matchers,
-            actions,
-        })
-    }
-
     pub fn matches_exception(&self, exception_data: &ExceptionData) -> bool {
         self.exception_matchers
             .iter()

@@ -7,7 +7,6 @@ mod matchers;
 mod rules;
 
 use self::frame::Frame;
-use self::grammar::rule;
 use self::rules::Rule;
 
 #[derive(Debug, Clone, Default)]
@@ -25,31 +24,7 @@ pub struct Enhancements {
 
 impl Enhancements {
     pub fn parse(input: &str) -> anyhow::Result<Self> {
-        let mut all_rules = vec![];
-
-        for line in input.lines() {
-            let line = line.trim();
-            if line.is_empty() || line.starts_with('#') {
-                continue;
-            }
-
-            // TODO: caching if it makes a difference
-
-            let raw_rule = rule(line)?;
-            let rule = Rule::from_raw(raw_rule)?;
-            all_rules.push(rule);
-        }
-
-        let modifier_rules = all_rules
-            .iter()
-            .filter(|r| r.has_modifier_action())
-            .cloned()
-            .collect();
-
-        Ok(Self {
-            all_rules,
-            modifier_rules,
-        })
+        grammar::parse_enhancers(input)
     }
 
     pub fn apply_modifications_to_frames(

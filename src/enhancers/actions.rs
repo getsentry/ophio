@@ -1,7 +1,6 @@
 use smol_str::SmolStr;
 
 use super::frame::Frame;
-use super::grammar::RawAction;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Range {
@@ -19,9 +18,9 @@ pub enum FlagActionType {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FlagAction {
-    flag: bool,
-    ty: FlagActionType,
-    range: Option<Range>,
+    pub flag: bool,
+    pub ty: FlagActionType,
+    pub range: Option<Range>,
 }
 
 impl FlagAction {
@@ -49,8 +48,8 @@ pub enum VarName {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VarAction {
-    var: VarName,
-    value: SmolStr,
+    pub var: VarName,
+    pub value: SmolStr,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -60,40 +59,6 @@ pub enum Action {
 }
 
 impl Action {
-    pub fn from_raw(raw: RawAction) -> Self {
-        match raw {
-            RawAction::Var(var_name, value) => {
-                let var = match var_name.as_str() {
-                    "max-frames" => VarName::MaxFrames,
-                    "min-frames" => VarName::MinFrames,
-                    "invert-stacktrace" => VarName::InvertStacktrace,
-                    "category" => VarName::Category,
-                    _ => unreachable!(),
-                };
-
-                Self::Var(VarAction { var, value })
-            }
-            RawAction::Flag(range, flag, ty) => {
-                let range = range.map(|r| match r {
-                    '^' => Range::Up,
-                    _ => Range::Down,
-                });
-
-                let flag = flag == '+';
-
-                let ty = match ty.as_str() {
-                    "app" => FlagActionType::App,
-                    "group" => FlagActionType::Group,
-                    "prefix" => FlagActionType::Prefix,
-                    "sentinel" => FlagActionType::Sentinel,
-                    _ => unreachable!(),
-                };
-
-                Self::Flag(FlagAction { flag, ty, range })
-            }
-        }
-    }
-
     pub fn is_modifier(&self) -> bool {
         matches!(
             self,

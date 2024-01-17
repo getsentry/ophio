@@ -44,7 +44,6 @@ _        = space*
 use smol_str::SmolStr;
 
 pub use nom::parse_enhancers;
-pub use nom::rule;
 
 #[derive(Debug)]
 pub struct RawMatcher {
@@ -59,6 +58,7 @@ pub struct RawMatchers {
     pub matchers: Vec<RawMatcher>,
     pub callee_matcher: Option<RawMatcher>,
 }
+
 #[derive(Debug)]
 pub enum RawAction {
     Var(SmolStr, SmolStr),
@@ -74,53 +74,59 @@ mod nom {
     use nom::branch::alt;
     use nom::bytes::complete::{escaped_transform, tag, take_while1};
     use nom::character::complete::{alpha1, anychar, char, one_of, space0};
-    use nom::combinator::{all_consuming, opt, value};
+    use nom::combinator::{all_consuming, map, map_res, opt, value};
     use nom::multi::{many0, many1};
     use nom::sequence::{delimited, pair, preceded, tuple};
     use nom::{Finish, IResult, Parser};
 
-    use super::{RawAction, RawMatcher, RawMatchers, RawRule};
+    use crate::enhancers::actions::{
+        Action, FlagAction, FlagActionType, Range, VarAction, VarName,
+    };
+    use crate::enhancers::matchers::{get_matcher, Matcher};
+    use crate::enhancers::rules::Rule;
+    use crate::enhancers::Enhancements;
 
     fn ident(input: &str) -> IResult<&str, &str> {
         take_while1(|c: char| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-'))(input)
     }
 
-    fn frame_matcher(input: &str) -> IResult<&str, RawMatcher> {
-        let input = input.trim_start();
+    fn frame_matcher(caller: bool, callee: bool) -> impl Fn(&str) -> IResult<&str, Matcher> {
+        move |input| {
+            let input = input.trim_start();
 
-        let quoted_ident = delimited(
-            char('"'),
-            take_while1(|c: char| {
-                c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | ':' | '-' | ' ')
-            }),
-            char('"'),
-        );
-        let matcher_type = alt((ident, quoted_ident));
+            let quoted_ident = delimited(
+                char('"'),
+                take_while1(|c: char| {
+                    c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | ':' | '-' | ' ')
+                }),
+                char('"'),
+            );
+            let matcher_type = alt((ident, quoted_ident));
 
-        let unquoted = take_while1(|c: char| !c.is_ascii_whitespace());
-        // TODO: escapes, etc
-        let quoted = delimited(char('"'), take_while1(|c: char| c != '"'), char('"'));
-        let argument = alt((quoted, unquoted));
+            let unquoted = take_while1(|c: char| !c.is_ascii_whitespace());
+            // TODO: escapes, etc
+            let quoted = delimited(char('"'), take_while1(|c: char| c != '"'), char('"'));
+            let argument = alt((quoted, unquoted));
 
-        let (input, (is_negation, matcher_type, _, argument)) =
-            tuple((opt(char('!')), matcher_type, char(':'), argument))(input)?;
+            let mut matcher = map_res(
+                tuple((opt(char('!')), matcher_type, char(':'), argument)),
+                |(negated, matcher_type, _, argument): (_, _, _, &str)| {
+                    get_matcher(negated.is_some(), matcher_type, argument, caller, callee)
+                },
+            );
 
-        let matcher = RawMatcher {
-            negation: is_negation.is_some(),
-            ty: matcher_type.into(),
-            argument: argument.into(),
-        };
-        Ok((input, matcher))
+            matcher(input)
+        }
     }
 
-    fn matchers(input: &str) -> IResult<&str, RawMatchers> {
+    fn matchers(input: &str) -> IResult<&str, Vec<Matcher>> {
         let input = input.trim_start();
 
         let caller_matcher = tuple((
             space0,
             char('['),
             space0,
-            frame_matcher,
+            frame_matcher(true, false),
             space0,
             char(']'),
             space0,
@@ -132,64 +138,93 @@ mod nom {
             space0,
             char('['),
             space0,
-            frame_matcher,
+            frame_matcher(false, true),
             space0,
             char(']'),
         ));
 
         let mut matchers = tuple((
             opt(caller_matcher),
-            many1(frame_matcher),
+            many1(frame_matcher(false, false)),
             opt(callee_matcher),
         ));
 
-        let (input, (caller_matcher, matchers, callee_matcher)) = matchers(input)?;
+        let (input, (caller_matcher, mut matchers, callee_matcher)) = matchers(input)?;
 
-        let caller_matcher = caller_matcher.map(|(_, _, _, m, _, _, _, _)| m);
-        let callee_matcher = callee_matcher.map(|(_, _, _, _, _, m, _, _)| m);
+        if let Some((_, _, _, m, _, _, _, _)) = caller_matcher {
+            matchers.push(m);
+        }
 
-        let matchers = RawMatchers {
-            caller_matcher,
-            matchers,
-            callee_matcher,
-        };
+        if let Some((_, _, _, _, _, m, _, _)) = callee_matcher {
+            matchers.push(m);
+        }
+
         Ok((input, matchers))
     }
 
-    fn actions(input: &str) -> IResult<&str, Vec<RawAction>> {
+    fn actions(input: &str) -> IResult<&str, Vec<Action>> {
         let var_name = alt((
-            tag("max-frames"),
-            tag("min-frames"),
-            tag("invert-stacktrace"),
-            tag("category"),
+            value(VarName::MaxFrames, tag("max-frames")),
+            value(VarName::MinFrames, tag("min-frames")),
+            value(VarName::InvertStacktrace, tag("invert-stacktrace")),
+            value(VarName::Category, tag("category")),
         ));
-        let var_action = tuple((var_name, space0, char('='), space0, ident))
-            .map(|(var_name, _, _, _, ident)| RawAction::Var(var_name.into(), ident.into()));
-
-        let flag_name = alt((tag("group"), tag("app"), tag("prefix"), tag("sentinel")));
-        let flag_action = tuple((opt(one_of("^v")), one_of("+-"), flag_name)).map(
-            |(range, flag, flag_name): (_, _, &str)| RawAction::Flag(range, flag, flag_name.into()),
+        let var_action = tuple((var_name, space0, char('='), space0, ident)).map(
+            |(var_name, _, _, _, ident)| VarAction {
+                var: var_name,
+                value: ident.into(),
+            },
         );
 
-        let action = preceded(space0, alt((flag_action, var_action)));
+        let flag_name = alt((
+            value(FlagActionType::Group, tag("group")),
+            value(FlagActionType::App, tag("app")),
+            value(FlagActionType::Prefix, tag("prefix")),
+            value(FlagActionType::Sentinel, tag("sentinel")),
+        ));
+        let range = opt(alt((
+            value(Range::Up, char('^')),
+            value(Range::Down, char('v')),
+        )));
+        let flag = alt((value(true, char('+')), value(false, char('-'))));
+        let flag_action =
+            tuple((range, flag, flag_name)).map(|(range, flag, ty)| FlagAction { range, flag, ty });
+
+        let action = preceded(
+            space0,
+            alt((map(flag_action, Action::Flag), map(var_action, Action::Var))),
+        );
 
         let (input, actions) = many1(action)(input)?;
 
         Ok((input, actions))
     }
 
-    pub fn rule(input: &str) -> anyhow::Result<RawRule> {
+    pub fn rule(input: &str) -> anyhow::Result<Rule> {
         let comment = tuple((space0, char('#'), many0(anychar)));
         let (_input, (matchers, actions, _)) =
             all_consuming(tuple((matchers, actions, opt(comment))))(input)
                 .finish()
                 .map_err(|e| anyhow::Error::msg(e.to_string()))?;
 
-        Ok(RawRule { matchers, actions })
+        let (mut frame_matchers, mut exception_matchers) = (Vec::new(), Vec::new());
+
+        for m in matchers {
+            match m {
+                Matcher::Frame(m) => frame_matchers.push(m),
+                Matcher::Exception(m) => exception_matchers.push(m),
+            }
+        }
+
+        Ok(Rule {
+            frame_matchers,
+            exception_matchers,
+            actions,
+        })
     }
 
-    pub fn parse_enhancers(input: &str) -> anyhow::Result<Vec<RawRule>> {
-        let mut rules = vec![];
+    pub fn parse_enhancers(input: &str) -> anyhow::Result<Enhancements> {
+        let mut all_rules = vec![];
 
         for line in input.lines() {
             let line = line.trim();
@@ -197,10 +232,19 @@ mod nom {
                 continue;
             }
             let rule = rule(line)?;
-            rules.push(rule);
+            all_rules.push(rule);
         }
 
-        Ok(rules)
+        let modifier_rules = all_rules
+            .iter()
+            .filter(|r| r.has_modifier_action())
+            .cloned()
+            .collect();
+
+        Ok(Enhancements {
+            all_rules,
+            modifier_rules,
+        })
     }
 }
 
