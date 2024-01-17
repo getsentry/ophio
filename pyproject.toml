@@ -3,7 +3,7 @@ requires = ["maturin>=1.4,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "sentry-ophio"
+name = "sentry_ophio"
 requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Rust",
@@ -13,5 +13,5 @@ classifiers = [
 dynamic = ["version"]
 
 [tool.maturin]
-features = ["pyo3/extension-module"]
+manifest-path = "bindings/Cargo.toml"
 python-source = "python"
