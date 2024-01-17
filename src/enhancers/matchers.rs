@@ -1,11 +1,9 @@
-use std::collections::HashSet;
 use std::sync::Arc;
 
 use globset::GlobBuilder;
 use regex::bytes::{Regex, RegexBuilder};
-use smol_str::SmolStr;
 
-use super::frame::{Frame, FrameField};
+use super::frame::{Frame, FrameField, StringField};
 use super::ExceptionData;
 
 fn translate_pattern(pat: &str, is_path_matcher: bool) -> anyhow::Result<Regex> {
@@ -112,7 +110,7 @@ pub trait FrameMatcher {
 
 trait SimpleFieldMatcher {
     fn field(&self) -> FrameField;
-    fn matches_value(&self, value: &str) -> bool;
+    fn matches_value(&self, value: &StringField) -> bool;
 }
 
 impl<S: SimpleFieldMatcher> FrameMatcher for S {
@@ -183,7 +181,7 @@ impl SimpleFieldMatcher for FrameFieldMatch {
     fn field(&self) -> FrameField {
         self.field
     }
-    fn matches_value(&self, value: &str) -> bool {
+    fn matches_value(&self, value: &StringField) -> bool {
         self.pattern.is_match(value.as_bytes())
     }
 }
@@ -207,7 +205,7 @@ impl SimpleFieldMatcher for PathLikeMatch {
         self.field
     }
 
-    fn matches_value(&self, value: &str) -> bool {
+    fn matches_value(&self, value: &StringField) -> bool {
         if self.pattern.is_match(value.as_bytes()) {
             return true;
         }
@@ -224,13 +222,13 @@ impl SimpleFieldMatcher for PathLikeMatch {
 struct FamilyMatch {
     // NOTE: This is a `Vec` because we typically only have a single item.
     // NOTE: we optimize for `"all"` by just storing an empty `Vec` and checking for that
-    families: Vec<SmolStr>,
+    families: Vec<StringField>,
 }
 
 impl FamilyMatch {
     fn new(families: &str) -> Self {
-        let mut families: Vec<_> = families.split(',').map(SmolStr::from).collect();
-        if families.contains(&SmolStr::new("all")) {
+        let mut families: Vec<_> = families.split(',').map(StringField::new).collect();
+        if families.contains(&StringField::new("all")) {
             families = vec![];
         }
 
@@ -243,8 +241,8 @@ impl SimpleFieldMatcher for FamilyMatch {
         FrameField::Family
     }
 
-    fn matches_value(&self, value: &str) -> bool {
-        self.families.is_empty() || self.families.iter().any(|el| el == value)
+    fn matches_value(&self, value: &StringField) -> bool {
+        self.families.is_empty() || self.families.contains(value)
     }
 }
 

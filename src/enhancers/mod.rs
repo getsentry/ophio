@@ -55,7 +55,7 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore]
+    #[ignore = "needs to be run manually in release mode"]
     fn apply_full() {
         let enhancers = std::fs::read_to_string("tests/fixtures/newstyle@2023-01-11.txt").unwrap();
         let enhancements = Enhancements::parse(&enhancers).unwrap();
