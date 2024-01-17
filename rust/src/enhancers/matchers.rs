@@ -21,8 +21,8 @@ fn translate_pattern(pat: &str, is_path_matcher: bool) -> anyhow::Result<Regex> 
 
 #[derive(Clone)]
 pub enum Matcher {
-    Frame(Arc<dyn FrameMatcher>),
-    Exception(Arc<dyn ExceptionMatcher>),
+    Frame(Arc<dyn FrameMatcher + Send + Sync>),
+    Exception(Arc<dyn ExceptionMatcher + Send + Sync>),
 }
 
 // TODO: take `caller/e` as argument
@@ -139,12 +139,12 @@ impl<M: FrameMatcher> FrameMatcher for NegationWrapper<M> {
     }
 }
 
-pub fn create_frame_matcher<M: FrameMatcher + 'static>(
+pub fn create_frame_matcher<M: FrameMatcher + Send + Sync + 'static>(
     negated: bool,
     caller: bool,
     callee: bool,
     matcher: M,
-) -> Arc<dyn FrameMatcher> {
+) -> Arc<dyn FrameMatcher + Send + Sync> {
     if caller {
         Arc::new(CallerMatch(NegationWrapper {
             negated,
@@ -353,10 +353,10 @@ impl<M: ExceptionMatcher> ExceptionMatcher for NegationWrapper<M> {
     }
 }
 
-pub fn create_exception_matcher<M: ExceptionMatcher + 'static>(
+pub fn create_exception_matcher<M: ExceptionMatcher + Send + Sync + 'static>(
     negated: bool,
     matcher: M,
-) -> Arc<dyn ExceptionMatcher> {
+) -> Arc<dyn ExceptionMatcher + Send + Sync> {
     Arc::new(NegationWrapper {
         negated,
         inner: matcher,
@@ -374,13 +374,10 @@ mod tests {
     fn create_matcher(rules: &str) -> impl Fn(Frame) -> bool {
         let rules = parse_enhancers(rules).unwrap();
         let rule = rules.all_rules.into_iter().next().unwrap();
-        let matchers = rule.frame_matchers;
 
         move |frame: Frame| {
             let frames = &[frame];
-            matchers
-                .iter()
-                .all(|matcher| matcher.matches_frame(frames, 0))
+            rule.matches_frame(frames, 0)
         }
     }
 

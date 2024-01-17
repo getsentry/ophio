@@ -44,6 +44,7 @@ _        = space*
 use smol_str::SmolStr;
 
 pub use nom::parse_enhancers;
+pub use nom::rule as parse_rule;
 
 #[derive(Debug)]
 pub struct RawMatcher {
@@ -71,6 +72,8 @@ pub struct RawRule {
 }
 
 mod nom {
+    use std::sync::Arc;
+
     use nom::branch::alt;
     use nom::bytes::complete::{escaped_transform, tag, take_while1};
     use nom::character::complete::{alpha1, anychar, char, one_of, space0};
@@ -83,7 +86,7 @@ mod nom {
         Action, FlagAction, FlagActionType, Range, VarAction, VarName,
     };
     use crate::enhancers::matchers::{get_matcher, Matcher};
-    use crate::enhancers::rules::Rule;
+    use crate::enhancers::rules::{Rule, RuleInner};
     use crate::enhancers::Enhancements;
 
     fn ident(input: &str) -> IResult<&str, &str> {
@@ -216,11 +219,11 @@ mod nom {
             }
         }
 
-        Ok(Rule {
+        Ok(Rule(Arc::new(RuleInner {
             frame_matchers,
             exception_matchers,
             actions,
-        })
+        })))
     }
 
     pub fn parse_enhancers(input: &str) -> anyhow::Result<Enhancements> {
