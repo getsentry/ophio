@@ -74,7 +74,8 @@ mod tests {
 
     #[test]
     fn parses_default_enhancers() {
-        let enhancers = std::fs::read_to_string("tests/fixtures/newstyle@2023-01-11.txt").unwrap();
+        let enhancers =
+            std::fs::read_to_string("../tests/fixtures/newstyle@2023-01-11.txt").unwrap();
         Enhancements::parse(&enhancers, NoopCache).unwrap();
     }
 }
