@@ -59,41 +59,6 @@ pub enum Action {
 }
 
 impl Action {
-<<<<<<< HEAD
-    pub fn from_raw(raw: RawAction) -> Self {
-        match raw {
-            RawAction::Var(var_name, value) => {
-                let var = match var_name.as_str() {
-                    "max-frames" => VarName::MaxFrames,
-                    "min-frames" => VarName::MinFrames,
-                    "invert-stacktrace" => VarName::InvertStacktrace,
-                    "category" => VarName::Category,
-                    _ => unreachable!(),
-                };
-
-                Self::Var(VarAction { var, value })
-            }
-            RawAction::Flag(range, flag, ty) => {
-                let range = range.map(|r| match r {
-                    '^' => Range::Up,
-                    _ => Range::Down,
-                });
-
-                let flag = flag == '+';
-
-                let ty = match ty.as_str() {
-                    "app" => FlagActionType::App,
-                    "group" => FlagActionType::Group,
-                    "prefix" => FlagActionType::Prefix,
-                    "sentinel" => FlagActionType::Sentinel,
-                    _ => unreachable!(),
-                };
-
-                Self::Flag(FlagAction { flag, ty, range })
-            }
-        }
-    }
-
     pub fn is_modifier(&self) -> bool {
         matches!(
             self,
@@ -107,8 +72,6 @@ impl Action {
         )
     }
 
-=======
->>>>>>> d5edbed (Parse directly with nom)
     pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize) {
         match self {
             Action::Flag(

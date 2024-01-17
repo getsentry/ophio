@@ -221,7 +221,6 @@ impl SimpleFieldMatcher for PathLikeMatch {
 }
 
 #[derive(Debug, Clone)]
-<<<<<<< HEAD
 struct FamilyMatch {
     // NOTE: This is a `Vec` because we typically only have a single item.
     // NOTE: we optimize for `"all"` by just storing an empty `Vec` and checking for that
@@ -234,15 +233,6 @@ impl FamilyMatch {
         if families.contains(&SmolStr::new("all")) {
             families = vec![];
         }
-=======
-pub struct FamilyMatch {
-    families: HashSet<SmolStr>,
-}
-
-impl FamilyMatch {
-    pub fn new(families: &str) -> Self {
-        let families = families.split(',').map(SmolStr::from).collect();
->>>>>>> d5edbed (Parse directly with nom)
 
         Self { families }
     }
@@ -385,7 +375,7 @@ mod tests {
 
     fn create_matcher(rules: &str) -> impl Fn(Frame) -> bool {
         let rules = parse_enhancers(rules).unwrap();
-        let rule = rules.rules.into_iter().next().unwrap();
+        let rule = rules.all_rules.into_iter().next().unwrap();
         let matchers = rule.frame_matchers;
 
         move |frame: Frame| {

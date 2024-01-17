@@ -72,17 +72,10 @@ pub struct RawRule {
 
 mod nom {
     use nom::branch::alt;
-<<<<<<< HEAD
     use nom::bytes::complete::{escaped_transform, tag, take_while1};
     use nom::character::complete::{alpha1, anychar, char, one_of, space0};
-    use nom::combinator::{all_consuming, opt, value};
-    use nom::multi::{many0, many1};
-=======
-    use nom::bytes::complete::{tag, take_while1};
-    use nom::character::complete::{char, space0};
     use nom::combinator::{all_consuming, map, map_res, opt, value};
-    use nom::multi::many1;
->>>>>>> d5edbed (Parse directly with nom)
+    use nom::multi::{many0, many1};
     use nom::sequence::{delimited, pair, preceded, tuple};
     use nom::{Finish, IResult, Parser};
 
@@ -97,61 +90,23 @@ mod nom {
         take_while1(|c: char| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-'))(input)
     }
 
-<<<<<<< HEAD
-    fn frame_matcher(input: &str) -> IResult<&str, RawMatcher> {
-        let input = input.trim_start();
-
-        let quoted_ident = delimited(
-            char('"'),
-            take_while1(|c: char| {
-                c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | ':' | '-' | ' ')
-            }),
-            char('"'),
-        );
-        let matcher_type = alt((ident, quoted_ident));
-
-        let unquoted = take_while1(|c: char| !c.is_ascii_whitespace());
-        // TODO: escapes, etc
-        let quoted = delimited(char('"'), take_while1(|c: char| c != '"'), char('"'));
-        let argument = alt((quoted, unquoted));
-=======
     fn frame_matcher(caller: bool, callee: bool) -> impl Fn(&str) -> IResult<&str, Matcher> {
         move |input| {
-            /*let (input, is_negation) = opt(tag("!"))(input)?;
-            let (input, matcher_type) = alt(ident, quoted_ident)(input)?;
-            let (input, _) = tag(":")(input)?;
-            let (input, argument) = alt(quoted, unquoted)(input)?;*/
             let input = input.trim_start();
 
             let quoted_ident = delimited(
                 char('"'),
                 take_while1(|c: char| {
-                    c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | ':' | '-')
+                    c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | ':' | '-' | ' ')
                 }),
                 char('"'),
             );
             let matcher_type = alt((ident, quoted_ident));
 
             let unquoted = take_while1(|c: char| !c.is_ascii_whitespace());
-            // let quoted = delimited(
-            //     char('"'),
-            //     escaped_transform(
-            //         alpha1,
-            //         '\\',
-            //         alt((
-            //             value("\\", tag("\\")),
-            //             value("\"", tag("\"")),
-            //             value("\n", tag("n")),
-            //         )),
-            //     ),
-            //     char('"'),
-            // );
-            //let argument = alt((quoted, unquoted));
-            let argument = unquoted;
->>>>>>> d5edbed (Parse directly with nom)
-
-            // let (input, (is_negation, matcher_type, _, argument)) =
-            //     tuple((opt(char('!')), matcher_type, char(':'), argument))(input)?;
+            // TODO: escapes, etc
+            let quoted = delimited(char('"'), take_while1(|c: char| c != '"'), char('"'));
+            let argument = alt((quoted, unquoted));
 
             let mut matcher = map_res(
                 tuple((opt(char('!')), matcher_type, char(':'), argument)),
@@ -159,8 +114,6 @@ mod nom {
                     get_matcher(negated.is_some(), matcher_type, argument, caller, callee)
                 },
             );
-
-            // TODO: cache based on (negated, matcher_type, argument)
 
             matcher(input)
         }
@@ -247,19 +200,12 @@ mod nom {
         Ok((input, actions))
     }
 
-<<<<<<< HEAD
-    pub fn rule(input: &str) -> anyhow::Result<RawRule> {
+    pub fn rule(input: &str) -> anyhow::Result<Rule> {
         let comment = tuple((space0, char('#'), many0(anychar)));
         let (_input, (matchers, actions, _)) =
             all_consuming(tuple((matchers, actions, opt(comment))))(input)
                 .finish()
                 .map_err(|e| anyhow::Error::msg(e.to_string()))?;
-=======
-    pub fn rule(input: &str) -> anyhow::Result<Rule> {
-        let (_input, (matchers, actions)) = all_consuming(pair(matchers, actions))(input)
-            .finish()
-            .map_err(|e| anyhow::Error::msg(e.to_string()))?;
->>>>>>> d5edbed (Parse directly with nom)
 
         let (mut frame_matchers, mut exception_matchers) = (Vec::new(), Vec::new());
 
@@ -278,7 +224,7 @@ mod nom {
     }
 
     pub fn parse_enhancers(input: &str) -> anyhow::Result<Enhancements> {
-        let mut rules = vec![];
+        let mut all_rules = vec![];
 
         for line in input.lines() {
             let line = line.trim();
@@ -286,10 +232,19 @@ mod nom {
                 continue;
             }
             let rule = rule(line)?;
-            rules.push(rule);
+            all_rules.push(rule);
         }
 
-        Ok(Enhancements { rules })
+        let modifier_rules = all_rules
+            .iter()
+            .filter(|r| r.has_modifier_action())
+            .cloned()
+            .collect();
+
+        Ok(Enhancements {
+            all_rules,
+            modifier_rules,
+        })
     }
 }
 
