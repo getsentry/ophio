@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "sentry-ophio"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
@@ -14,3 +14,4 @@ dynamic = ["version"]
 
 [tool.maturin]
 features = ["pyo3/extension-module"]
+python-source = "python"

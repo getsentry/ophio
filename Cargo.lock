@@ -711,6 +711,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
 
 [[package]]
+name = "rust-ophio"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chumsky",
+ "divan",
+ "globset",
+ "nom",
+ "regex",
+ "serde_json",
+ "smol_str",
+]
+
+[[package]]
 name = "rustix"
 version = "0.38.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -765,16 +779,9 @@ checksum = "836fa6a3e1e547f9a2c4040802ec865b5d85f4014efe00555d7090a3dcaa1090"
 name = "sentry-ophio"
 version = "0.1.0"
 dependencies = [
- "anyhow",
- "chumsky",
- "divan",
- "globset",
- "nom",
  "proguard",
  "pyo3",
- "regex",
- "serde_json",
- "smol_str",
+ "rust-ophio",
  "symbolic",
 ]
 

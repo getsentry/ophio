@@ -1,30 +1,6 @@
-[package]
-name = "sentry-ophio"
-version = "0.1.0"
-edition = "2021"
-
-[lib]
-name = "sentry_ophio"
-crate-type = ["cdylib", "rlib"]
+[workspace]
+resolver = "2"
+members = ["bindings", "rust"]
 
 [profile.release]
 debug = 1
-
-[dependencies]
-anyhow = "1.0.79"
-chumsky = "0.9.3"
-globset = "0.4.14"
-nom = "7.1.3"
-proguard = { version = "5.4.0", features = ["uuid"] }
-pyo3 = { version = "0.20.0", features = [
-    "extension-module",
-    "serde",
-    "abi3-py38",
-] }
-regex = "1.10.2"
-smol_str = "0.2.0"
-symbolic = { version = "12.8.0", features = [] }
-
-[dev-dependencies]
-divan = "0.1.8"
-serde_json = "1.0.111"

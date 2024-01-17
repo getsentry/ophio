@@ -1,0 +1,20 @@
+[package]
+name = "rust-ophio"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.79"
+chumsky = "0.9.3"
+globset = "0.4.14"
+nom = "7.1.3"
+regex = "1.10.2"
+smol_str = "0.2.0"
+
+[dev-dependencies]
+divan = "0.1.8"
+serde_json = "1.0.111"
+
+[[bench]]
+name = "enhancers"
+harness = false
