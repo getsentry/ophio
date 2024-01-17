@@ -10,9 +10,11 @@ crate-type = ["cdylib"]
 [dependencies]
 proguard = { version = "5.4.0", features = ["uuid"] }
 pyo3 = { version = "0.20.0", features = [
+    "anyhow",
     "extension-module",
     "serde",
     "abi3-py310",
 ] }
 rust-ophio = { path = "../rust" }
+smol_str = "0.2.0"
 symbolic = { version = "12.8.0", features = [] }

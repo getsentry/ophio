@@ -35,42 +35,6 @@ impl Frame {
         }
     }
 
-    // TODO:
-    pub fn from_py_object() -> Self {
-        /*
-
-        // normalize path:
-        let mut value = value.replace('\\', "/");
-
-        def create_match_frame(frame_data: dict, platform: Optional[str]) -> dict:
-            """Create flat dict of values relevant to matchers"""
-            match_frame = dict(
-                category=get_path(frame_data, "data", "category"),
-                family=get_behavior_family_for_platform(frame_data.get("platform") or platform),
-                function=_get_function_name(frame_data, platform),
-                in_app=frame_data.get("in_app") or False,
-                module=get_path(frame_data, "module"),
-                package=frame_data.get("package"),
-                path=frame_data.get("abs_path") or frame_data.get("filename"),
-            )
-
-            for key in list(match_frame.keys()):
-                value = match_frame[key]
-                if isinstance(value, (bytes, str)):
-                    if key in ("package", "path"):
-                        value = match_frame[key] = value.lower()
-
-                    if isinstance(value, str):
-                        match_frame[key] = value.encode("utf-8")
-
-            return match_frame
-              */
-        Self::default()
-    }
-
-    // TODO:
-    pub fn apply_modifications_to_py_object(&self) {}
-
     #[cfg(any(test, feature = "testing"))]
     pub fn from_test(raw_frame: &serde_json::Value, platform: &str) -> Self {
         Self {

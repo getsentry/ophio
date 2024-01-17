@@ -599,6 +599,7 @@ version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04e8453b658fe480c3e70c8ed4e3d3ec33eb74988bd186561b0cc66b85c3bc4b"
 dependencies = [
+ "anyhow",
  "cfg-if",
  "indoc",
  "libc",
@@ -792,6 +793,7 @@ dependencies = [
  "proguard",
  "pyo3",
  "rust-ophio",
+ "smol_str",
  "symbolic",
 ]
 

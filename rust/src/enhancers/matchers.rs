@@ -104,11 +104,11 @@ pub fn get_matcher(
     Ok(matcher)
 }
 
-pub trait FrameMatcher {
+pub trait FrameMatcher: Send + Sync + 'static {
     fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool;
 }
 
-trait SimpleFieldMatcher {
+trait SimpleFieldMatcher: Send + Sync + 'static {
     fn field(&self) -> FrameField;
     fn matches_value(&self, value: &StringField) -> bool;
 }
@@ -289,7 +289,7 @@ impl<M: FrameMatcher> FrameMatcher for CalleeMatch<M> {
     }
 }
 
-pub trait ExceptionMatcher {
+pub trait ExceptionMatcher: Send + Sync + 'static {
     fn matches_exception(&self, exception_data: &ExceptionData) -> bool;
 }
 
