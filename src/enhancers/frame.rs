@@ -1,6 +1,6 @@
 use smol_str::SmolStr;
 
-type StringField = SmolStr;
+pub type StringField = SmolStr;
 
 #[derive(Debug, Clone, Default)]
 pub struct Frame {
@@ -24,14 +24,14 @@ pub enum FrameField {
 }
 
 impl Frame {
-    pub fn get_field(&self, field: FrameField) -> Option<&str> {
+    pub fn get_field(&self, field: FrameField) -> Option<&StringField> {
         match field {
-            FrameField::Category => self.category.as_deref(),
-            FrameField::Family => self.family.as_deref(),
-            FrameField::Function => self.function.as_deref(),
-            FrameField::Module => self.module.as_deref(),
-            FrameField::Package => self.package.as_deref(),
-            FrameField::Path => self.path.as_deref(),
+            FrameField::Category => self.category.as_ref(),
+            FrameField::Family => self.family.as_ref(),
+            FrameField::Function => self.function.as_ref(),
+            FrameField::Module => self.module.as_ref(),
+            FrameField::Package => self.package.as_ref(),
+            FrameField::Path => self.path.as_ref(),
         }
     }
 
