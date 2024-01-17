@@ -3,8 +3,7 @@ use std::sync::Arc;
 
 use super::actions::Action;
 use super::frame::Frame;
-use super::grammar::{RawMatcher, RawRule};
-use super::matchers::{get_matcher, ExceptionMatcher, FrameMatcher, Matcher};
+use super::matchers::{ExceptionMatcher, FrameMatcher};
 use super::ExceptionData;
 
 #[derive(Clone)]

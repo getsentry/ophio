@@ -1,0 +1,991 @@
+[
+  [
+    {
+      "function": "UIApplicationMain",
+      "package": "/System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore"
+    },
+    {
+      "function": "-[UIApplication _run]",
+      "package": "/System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore"
+    },
+    {
+      "function": "GSEventRunModal",
+      "package": "/System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices"
+    },
+    {
+      "function": "CFRunLoopRunSpecific",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "__CFRunLoopRun",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "__CFRunLoopDoSources0",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "__CFRunLoopDoSource0",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "__CFRUNLOOP_IS_CALLING_OUT_TO_A_SOURCE0_PERFORM_FUNCTION__",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "WTF::RunLoop::performWork",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::RunLoop::performWork",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "IPC::Connection::dispatchIncomingMessages",
+      "package": "/System/Library/Frameworks/WebKit.framework/WebKit"
+    },
+    {
+      "function": "IPC::Connection::dispatchMessage",
+      "package": "/System/Library/Frameworks/WebKit.framework/WebKit"
+    },
+    {
+      "function": "WebKit::WebProcessProxy::didReceiveMessage",
+      "package": "/System/Library/Frameworks/WebKit.framework/WebKit"
+    },
+    {
+      "function": "IPC::MessageReceiverMap::dispatchMessage",
+      "package": "/System/Library/Frameworks/WebKit.framework/WebKit"
+    },
+    {
+      "function": "WebKit::WebPageProxy::didReceiveMessage",
+      "package": "/System/Library/Frameworks/WebKit.framework/WebKit"
+    },
+    {
+      "function": "WebKit::WebPageProxy::decidePolicyForNavigationActionAsync",
+      "package": "/System/Library/Frameworks/WebKit.framework/WebKit"
+    },
+    {
+      "function": "WebKit::WebPageProxy::decidePolicyForNavigationActionAsyncShared",
+      "package": "/System/Library/Frameworks/WebKit.framework/WebKit"
+    },
+    {
+      "function": "WebKit::WebPageProxy::decidePolicyForNavigationAction",
+      "package": "/System/Library/Frameworks/WebKit.framework/WebKit"
+    },
+    {
+      "function": "WebKit::NavigationState::NavigationClient::decidePolicyForNavigationAction",
+      "package": "/System/Library/Frameworks/WebKit.framework/WebKit"
+    },
+    {
+      "function": "-[NSRegularExpression(NSMatching) firstMatchInString:options:range:]",
+      "package": "/System/Library/Frameworks/Foundation.framework/Foundation"
+    },
+    {
+      "function": "-[NSRegularExpression(NSMatching) enumerateMatchesInString:options:range:usingBlock:]",
+      "package": "/System/Library/Frameworks/Foundation.framework/Foundation"
+    },
+    {
+      "function": "icu::RegexMatcher::find",
+      "package": "/usr/lib/libicucore.A.dylib"
+    },
+    {
+      "function": "icu::RegexMatcher::MatchAt",
+      "package": "/usr/lib/libicucore.A.dylib"
+    },
+    {
+      "function": "utext_setNativeIndex",
+      "package": "/usr/lib/libicucore.A.dylib"
+    },
+    {
+      "function": "doAccess",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "doAccess",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    }
+  ],
+  [
+    {
+      "function": "UIApplicationMain",
+      "package": "/System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore"
+    },
+    {
+      "function": "-[UIApplication _run]",
+      "package": "/System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore"
+    },
+    {
+      "function": "GSEventRunModal",
+      "package": "/System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices"
+    },
+    {
+      "function": "CFRunLoopRunSpecific",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "__CFRunLoopRun",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "__CFRunLoopDoSources0",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "__CFRunLoopDoSource0",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "__CFRUNLOOP_IS_CALLING_OUT_TO_A_SOURCE0_PERFORM_FUNCTION__",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "WTF::RunLoop::performWork",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::RunLoop::performWork",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "IPC::Connection::dispatchIncomingMessages",
+      "package": "/System/Library/Frameworks/WebKit.framework/WebKit"
+    },
+    {
+      "function": "IPC::Connection::dispatchMessage",
+      "package": "/System/Library/Frameworks/WebKit.framework/WebKit"
+    },
+    {
+      "function": "WebKit::WebProcessProxy::didReceiveMessage",
+      "package": "/System/Library/Frameworks/WebKit.framework/WebKit"
+    },
+    {
+      "function": "IPC::MessageReceiverMap::dispatchMessage",
+      "package": "/System/Library/Frameworks/WebKit.framework/WebKit"
+    },
+    {
+      "function": "WebKit::WebPageProxy::didReceiveMessage",
+      "package": "/System/Library/Frameworks/WebKit.framework/WebKit"
+    },
+    {
+      "function": "WebKit::WebPageProxy::decidePolicyForNavigationActionAsync",
+      "package": "/System/Library/Frameworks/WebKit.framework/WebKit"
+    },
+    {
+      "function": "WebKit::WebPageProxy::decidePolicyForNavigationActionAsyncShared",
+      "package": "/System/Library/Frameworks/WebKit.framework/WebKit"
+    },
+    {
+      "function": "WebKit::WebPageProxy::decidePolicyForNavigationAction",
+      "package": "/System/Library/Frameworks/WebKit.framework/WebKit"
+    },
+    {
+      "function": "WebKit::NavigationState::NavigationClient::decidePolicyForNavigationAction",
+      "package": "/System/Library/Frameworks/WebKit.framework/WebKit"
+    },
+    {
+      "function": "-[NSRegularExpression(NSMatching) firstMatchInString:options:range:]",
+      "package": "/System/Library/Frameworks/Foundation.framework/Foundation"
+    },
+    {
+      "function": "-[NSRegularExpression(NSMatching) enumerateMatchesInString:options:range:usingBlock:]",
+      "package": "/System/Library/Frameworks/Foundation.framework/Foundation"
+    },
+    {
+      "function": "icu::RegexMatcher::find",
+      "package": "/usr/lib/libicucore.A.dylib"
+    },
+    {
+      "function": "icu::RegexMatcher::MatchAt",
+      "package": "/usr/lib/libicucore.A.dylib"
+    },
+    {
+      "function": "utext_setNativeIndex",
+      "package": "/usr/lib/libicucore.A.dylib"
+    },
+    {
+      "function": "doAccess",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "doAccess",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_start",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__NSThread__start__",
+      "package": "/System/Library/Frameworks/Foundation.framework/Foundation"
+    },
+    {
+      "function": "-[UIEventFetcher threadMain]",
+      "package": "/System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore"
+    },
+    {
+      "function": "-[NSRunLoop(NSRunLoop) runUntilDate:]",
+      "package": "/System/Library/Frameworks/Foundation.framework/Foundation"
+    },
+    {
+      "function": "-[NSRunLoop(NSRunLoop) runMode:beforeDate:]",
+      "package": "/System/Library/Frameworks/Foundation.framework/Foundation"
+    },
+    {
+      "function": "CFRunLoopRunSpecific",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "__CFRunLoopRun",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "__CFRunLoopServiceMachPort",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "mach_msg",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg_overwrite",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg2_internal",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg2_trap",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_start",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "mach_msg",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg_overwrite",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg2_internal",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg2_trap",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_start",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "scavenger_thread_main",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "_pthread_cond_wait",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__psynch_cvwait",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_start",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__NSThread__start__",
+      "package": "/System/Library/Frameworks/Foundation.framework/Foundation"
+    },
+    {
+      "function": "_CFURLStorageSessionCopyIdentifier",
+      "package": "/System/Library/Frameworks/CFNetwork.framework/CFNetwork"
+    },
+    {
+      "function": "CFRunLoopRunSpecific",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "__CFRunLoopRun",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "__CFRunLoopServiceMachPort",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "mach_msg",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg_overwrite",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg2_internal",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg2_trap",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_start",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__NSThread__start__",
+      "package": "/System/Library/Frameworks/Foundation.framework/Foundation"
+    },
+
+    {
+      "function": "CFRunLoopRunSpecific",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "__CFRunLoopRun",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "__CFRunLoopServiceMachPort",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "mach_msg",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg_overwrite",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg2_internal",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg2_trap",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_start",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "sleep",
+      "package": "/usr/lib/system/libsystem_c.dylib"
+    },
+    {
+      "function": "nanosleep",
+      "package": "/usr/lib/system/libsystem_c.dylib"
+    },
+    {
+      "function": "__semwait_signal",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_start",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "thread_suspend",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg2_internal",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg2_trap",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_start",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "mach_msg",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg_overwrite",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg2_internal",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg2_trap",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "thread_start",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "_pthread_start",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__NSThread__start__",
+      "package": "/System/Library/Frameworks/Foundation.framework/Foundation"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_start",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "CLClientGetDistanceCoordinates",
+      "package": "/System/Library/Frameworks/CoreMotion.framework/CoreMotion"
+    },
+    {
+      "function": "CFRunLoopRun",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "CFRunLoopRunSpecific",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "__CFRunLoopRun",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "__CFRunLoopServiceMachPort",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "mach_msg",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg_overwrite",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg2_internal",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg2_trap",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_start",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "WTF::wtfThreadEntryPoint",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::Thread::entryPoint",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::Detail::CallableWrapper<T>::call",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::ParkingLot::parkConditionallyImpl",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::ThreadCondition::timedWait",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "_pthread_cond_wait",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__psynch_cvwait",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_start",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__NSThread__start__",
+      "package": "/System/Library/Frameworks/Foundation.framework/Foundation"
+    },
+
+    {
+      "function": "-[NSRunLoop(NSRunLoop) runMode:beforeDate:]",
+      "package": "/System/Library/Frameworks/Foundation.framework/Foundation"
+    },
+    {
+      "function": "CFRunLoopRunSpecific",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "__CFRunLoopRun",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "__CFRunLoopServiceMachPort",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "mach_msg",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg_overwrite",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg2_internal",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg2_trap",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_start",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__CFSocketManager",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "__select",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_start",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__NSThread__start__",
+      "package": "/System/Library/Frameworks/Foundation.framework/Foundation"
+    },
+
+    {
+      "function": "-[NSRunLoop(NSRunLoop) run]",
+      "package": "/System/Library/Frameworks/Foundation.framework/Foundation"
+    },
+    {
+      "function": "-[NSRunLoop(NSRunLoop) runMode:beforeDate:]",
+      "package": "/System/Library/Frameworks/Foundation.framework/Foundation"
+    },
+    {
+      "function": "CFRunLoopRunSpecific",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "__CFRunLoopRun",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "__CFRunLoopServiceMachPort",
+      "package": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"
+    },
+    {
+      "function": "mach_msg",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg_overwrite",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg2_internal",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    },
+    {
+      "function": "mach_msg2_trap",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_wqthread",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__workq_kernreturn",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_wqthread",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__workq_kernreturn",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_wqthread",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__workq_kernreturn",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_wqthread",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__workq_kernreturn",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_wqthread",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__workq_kernreturn",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_wqthread",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__workq_kernreturn",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_wqthread",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__workq_kernreturn",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_wqthread",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__workq_kernreturn",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_wqthread",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__workq_kernreturn",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_wqthread",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__workq_kernreturn",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_wqthread",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__workq_kernreturn",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_start",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "WTF::wtfThreadEntryPoint",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::Thread::entryPoint",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::Detail::CallableWrapper<T>::call",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::ParkingLot::parkConditionallyImpl",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::ThreadCondition::timedWait",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "_pthread_cond_wait",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__psynch_cvwait",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_start",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "WTF::wtfThreadEntryPoint",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::Thread::entryPoint",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::Detail::CallableWrapper<T>::call",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::ParkingLot::parkConditionallyImpl",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::ThreadCondition::timedWait",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "_pthread_cond_wait",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__psynch_cvwait",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_start",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "WTF::wtfThreadEntryPoint",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::Thread::entryPoint",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::Detail::CallableWrapper<T>::call",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::ParkingLot::parkConditionallyImpl",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::ThreadCondition::timedWait",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "_pthread_cond_wait",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__psynch_cvwait",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_start",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "WTF::wtfThreadEntryPoint",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::Thread::entryPoint",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::Detail::CallableWrapper<T>::call",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::ParkingLot::parkConditionallyImpl",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::ThreadCondition::timedWait",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "_pthread_cond_wait",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__psynch_cvwait",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_start",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "WTF::wtfThreadEntryPoint",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::Thread::entryPoint",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::Detail::CallableWrapper<T>::call",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::ParkingLot::parkConditionallyImpl",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::ThreadCondition::timedWait",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "_pthread_cond_wait",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__psynch_cvwait",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_wqthread",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__workq_kernreturn",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_wqthread",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__workq_kernreturn",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_wqthread",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__workq_kernreturn",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_wqthread",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__workq_kernreturn",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ],
+  [
+    {
+      "function": "_pthread_start",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "WTF::wtfThreadEntryPoint",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::Thread::entryPoint",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::Detail::CallableWrapper<T>::call",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::ParkingLot::parkConditionallyImpl",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "WTF::ThreadCondition::timedWait",
+      "package": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore"
+    },
+    {
+      "function": "_pthread_cond_wait",
+      "package": "/usr/lib/system/libsystem_pthread.dylib"
+    },
+    {
+      "function": "__psynch_cvwait",
+      "package": "/usr/lib/system/libsystem_kernel.dylib"
+    }
+  ]
+]

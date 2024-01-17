@@ -71,44 +71,42 @@ impl Frame {
     // TODO:
     pub fn apply_modifications_to_py_object(&self) {}
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "testing"))]
     pub fn from_test(raw_frame: &serde_json::Value, platform: &str) -> Self {
-        let mut frame = Self::default();
+        Self {
+            category: raw_frame
+                .pointer("/data/category")
+                .and_then(|s| s.as_str())
+                .map(SmolStr::new),
+            family: raw_frame
+                .get("platform")
+                .and_then(|s| s.as_str())
+                .or(Some(platform))
+                .map(SmolStr::new),
+            function: raw_frame
+                .get("function")
+                .and_then(|s| s.as_str())
+                .map(SmolStr::new),
+            in_app: raw_frame
+                .get("in_app")
+                .and_then(|s| s.as_bool())
+                .unwrap_or_default(),
 
-        frame.category = raw_frame
-            .pointer("/data/category")
-            .and_then(|s| s.as_str())
-            .map(SmolStr::new);
-        frame.family = raw_frame
-            .get("platform")
-            .and_then(|s| s.as_str())
-            .or(Some(platform))
-            .map(SmolStr::new);
-        frame.function = raw_frame
-            .get("function")
-            .and_then(|s| s.as_str())
-            .map(SmolStr::new);
-        frame.in_app = raw_frame
-            .get("in_app")
-            .and_then(|s| s.as_bool())
-            .unwrap_or_default();
+            module: raw_frame
+                .get("module")
+                .and_then(|s| s.as_str())
+                .map(SmolStr::new),
 
-        frame.module = raw_frame
-            .get("module")
-            .and_then(|s| s.as_str())
-            .map(SmolStr::new);
+            package: raw_frame
+                .get("package")
+                .and_then(|s| s.as_str())
+                .map(|s| SmolStr::new(s.replace('\\', "/").to_lowercase())),
 
-        frame.package = raw_frame
-            .get("package")
-            .and_then(|s| s.as_str())
-            .map(|s| SmolStr::new(s.replace('\\', "/").to_lowercase()));
-
-        frame.path = raw_frame
-            .get("abs_path")
-            .or(raw_frame.get("filename"))
-            .and_then(|s| s.as_str())
-            .map(|s| SmolStr::new(s.replace('\\', "/").to_lowercase()));
-
-        frame
+            path: raw_frame
+                .get("abs_path")
+                .or(raw_frame.get("filename"))
+                .and_then(|s| s.as_str())
+                .map(|s| SmolStr::new(s.replace('\\', "/").to_lowercase())),
+        }
     }
 }
