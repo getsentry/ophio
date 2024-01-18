@@ -275,13 +275,13 @@ fn translate_pattern(pat: &str, is_path_matcher: bool) -> anyhow::Result<Regex> 
 mod tests {
     use serde_json::json;
 
-    use crate::enhancers::grammar::parse_enhancers;
+    use crate::enhancers::Enhancements;
 
     use super::*;
 
-    fn create_matcher(rules: &str) -> impl Fn(Frame) -> bool {
-        let rules = parse_enhancers(rules).unwrap();
-        let rule = rules.all_rules.into_iter().next().unwrap();
+    fn create_matcher(input: &str) -> impl Fn(Frame) -> bool {
+        let enhancements = Enhancements::parse(input, &mut Default::default()).unwrap();
+        let rule = enhancements.all_rules.into_iter().next().unwrap();
 
         move |frame: Frame| {
             let frames = &[frame];

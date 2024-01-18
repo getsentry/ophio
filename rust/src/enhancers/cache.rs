@@ -11,7 +11,7 @@ impl Cache {
     ///
     /// If `size` is 0, no caching will be performed.
     pub fn new(size: usize) -> Self {
-        Self(size.try_into().ok().map(|n| LruCache::new(n)))
+        Self(size.try_into().ok().map(LruCache::new))
     }
 
     /// Gets the rule for the string `key` from the cache or computes and inserts
