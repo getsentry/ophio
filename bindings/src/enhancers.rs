@@ -1,4 +1,5 @@
-use pyo3::{prelude::*, types::PyDict};
+use pyo3::prelude::*;
+use pyo3::types::PyDict;
 use rust_ophio::enhancers::{Enhancements as RustEnhancements, ExceptionData, Frame, NoopCache};
 use smol_str::SmolStr;
 
