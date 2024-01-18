@@ -101,13 +101,13 @@ impl Action {
 mod tests {
     use serde_json::json;
 
-    use crate::enhancers::{Enhancements, NoopCache};
+    use crate::enhancers::{Cache, Enhancements};
 
     use super::*;
 
     #[test]
     fn in_app_modification() {
-        let enhancements = Enhancements::parse("app:no +app", NoopCache).unwrap();
+        let enhancements = Enhancements::parse("app:no +app", &mut Cache::default()).unwrap();
 
         let mut frames = vec![
             Frame::from_test(&json!({"function": "foo"}), "native"),

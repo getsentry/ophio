@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 use divan::{black_box, Bencher};
 
-use rust_ophio::enhancers::{Enhancements, ExceptionData, Frame, LruCache, NoopCache};
+use rust_ophio::enhancers::{Cache, Enhancements, ExceptionData, Frame};
 use smol_str::SmolStr;
 
 fn main() {
@@ -25,14 +25,14 @@ fn read_fixture(name: &str) -> String {
 fn parse_enhancers(bencher: Bencher) {
     let enhancers = read_fixture("newstyle@2023-01-11.txt");
     bencher.bench(|| {
-        black_box(Enhancements::parse(&enhancers, NoopCache).unwrap());
+        black_box(Enhancements::parse(&enhancers, &mut Cache::default()).unwrap());
     })
 }
 
 #[divan::bench]
 fn parse_enhancers_cached(bencher: Bencher) {
     let enhancers = read_fixture("newstyle@2023-01-11.txt");
-    let mut cache = LruCache::new(1_000.try_into().unwrap());
+    let mut cache = Cache::new(1_000);
     bencher.bench_local(|| {
         black_box(Enhancements::parse(&enhancers, &mut cache).unwrap());
     })
@@ -41,7 +41,7 @@ fn parse_enhancers_cached(bencher: Bencher) {
 #[divan::bench]
 fn apply_modifications(bencher: Bencher) {
     let enhancers = read_fixture("newstyle@2023-01-11.txt");
-    let enhancers = Enhancements::parse(&enhancers, NoopCache).unwrap();
+    let enhancers = Enhancements::parse(&enhancers, &mut Cache::default()).unwrap();
 
     let platform = "cocoa";
 

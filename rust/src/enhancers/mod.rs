@@ -25,7 +25,7 @@ pub struct Enhancements {
 }
 
 impl Enhancements {
-    pub fn parse(input: &str, mut cache: impl Cache) -> anyhow::Result<Self> {
+    pub fn parse(input: &str, cache: &mut Cache) -> anyhow::Result<Self> {
         let mut all_rules = vec![];
 
         for line in input.lines() {
@@ -96,6 +96,6 @@ mod tests {
     fn parses_default_enhancers() {
         let enhancers =
             std::fs::read_to_string("../tests/fixtures/newstyle@2023-01-11.txt").unwrap();
-        Enhancements::parse(&enhancers, NoopCache).unwrap();
+        Enhancements::parse(&enhancers, &mut Cache::default()).unwrap();
     }
 }
