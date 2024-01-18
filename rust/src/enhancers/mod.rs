@@ -7,8 +7,8 @@ mod grammar;
 mod matchers;
 mod rules;
 
-pub use self::frame::Frame;
-use self::rules::Rule;
+pub use self::frame::{Frame, StringField};
+pub use self::rules::Rule;
 pub use cache::*;
 
 #[derive(Debug, Clone, Default)]

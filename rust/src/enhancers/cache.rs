@@ -1,3 +1,5 @@
+use std::num::NonZeroUsize;
+
 use super::rules::Rule;
 
 pub trait Cache {
@@ -29,10 +31,8 @@ impl Cache for NoopCache {
 pub struct LruCache(lru::LruCache<Box<str>, Rule>);
 
 impl LruCache {
-    pub fn new(size: usize) -> Self {
-        Self(lru::LruCache::new(
-            size.try_into().expect("cache must have capacity > 0"),
-        ))
+    pub fn new(size: NonZeroUsize) -> Self {
+        Self(lru::LruCache::new(size))
     }
 }
 

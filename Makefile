@@ -14,10 +14,13 @@ tests: test
 
 # install-rs-dev/install-py-dev mimick sentry's naming conventions
 
+INDEX_URL=--index-url https://pypi.devinfra.sentry.io/simple
+
 install-python-dependencies:
 	pip uninstall -qqy uwsgi  # pip doesn't do well with swapping drop-ins
-	pip install `grep ^-- requirements.txt` -r requirements-build.txt
-	pip install `grep ^-- requirements.txt` -e .
+	pip install $(INDEX_URL) -r requirements-build.txt
+	pip install $(INDEX_URL) -r requirements.txt
+	pip install $(INDEX_URL) -e .
 .PHONY: install-python-dependencies
 
 install-rs-dev:
@@ -27,11 +30,6 @@ install-rs-dev:
 
 install-py-dev: install-python-dependencies
 .PHONY: install-py-dev
-
-watch-rust-snuba:
-	. scripts/rust-envvars && \
-		cd rust_snuba/ && cargo watch -s 'maturin develop'
-.PHONY: watch-rust-snuba
 
 test-rust:
 	. scripts/rust-envvars && \

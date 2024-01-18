@@ -32,7 +32,7 @@ fn parse_enhancers(bencher: Bencher) {
 #[divan::bench]
 fn parse_enhancers_cached(bencher: Bencher) {
     let enhancers = read_fixture("newstyle@2023-01-11.txt");
-    let mut cache = LruCache::new(1_000);
+    let mut cache = LruCache::new(1_000.try_into().unwrap());
     bencher.bench_local(|| {
         black_box(Enhancements::parse(&enhancers, &mut cache).unwrap());
     })

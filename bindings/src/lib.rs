@@ -30,6 +30,7 @@ fn sentry_ophio(py: Python, m: &PyModule) -> PyResult<()> {
 
     let enhancers_module = add_module!(py: m.enhancers);
     enhancers_module.add_class::<enhancers::Enhancements>()?;
+    enhancers_module.add_class::<enhancers::Cache>()?;
 
     Ok(())
 }

@@ -1,114 +1,133 @@
 use pyo3::prelude::*;
-use pyo3::types::PyDict;
-use rust_ophio::enhancers::{Enhancements as RustEnhancements, ExceptionData, Frame, NoopCache};
-use smol_str::SmolStr;
+use pyo3::types::{PyDict, PyIterator};
+use rust_ophio::enhancers;
 
-fn exception_data_from_pydict(dict: &PyDict) -> ExceptionData {
-    let ty = dict
-        .get_item("type")
-        .ok()
-        .flatten()
-        .and_then(|t| t.extract().ok() as Option<&str>)
-        .map(SmolStr::new);
+#[derive(FromPyObject)]
+#[pyo3(from_item_all)]
+pub struct Frame {
+    category: OptStr,
+    family: OptStr,
+    function: OptStr,
+    module: OptStr,
+    package: OptStr,
+    path: OptStr,
+    in_app: bool,
+}
 
-    let value = dict
-        .get_item("value")
-        .ok()
-        .flatten()
-        .and_then(|t| t.extract().ok() as Option<&str>)
-        .map(SmolStr::new);
+struct OptStr(Option<enhancers::StringField>);
 
-    let mechanism = dict
-        .get_item("mechanism")
-        .ok()
-        .flatten()
-        .and_then(|m| m.get_item("type").ok())
-        .and_then(|t| t.extract().ok() as Option<&str>)
-        .map(SmolStr::new);
-
-    ExceptionData {
-        ty,
-        value,
-        mechanism,
+impl FromPyObject<'_> for OptStr {
+    fn extract(ob: &PyAny) -> PyResult<Self> {
+        if ob.is_none() {
+            return Ok(Self(None));
+        }
+        let s: &[u8] = ob.extract()?;
+        let s = std::str::from_utf8(s)?;
+        Ok(Self(Some(enhancers::StringField::new(s))))
     }
 }
 
-fn get_category(object: &PyDict) -> Option<SmolStr> {
-    let data: &PyDict = object.get_item("data").ok()??.downcast().ok()?;
-    let category: &str = data.get_item("category").ok()??.extract().ok()?;
-    Some(SmolStr::new(category))
+#[derive(FromPyObject)]
+pub struct ExceptionData {
+    ty: OptStr,
+    value: OptStr,
+    mechanism: OptStr,
 }
-
-fn get_family(object: &PyDict, platform: Option<&str>) -> Option<SmolStr> {
-    let obj_platform: Option<&str> = object.get_item("platform").ok()??.extract().ok();
-    let platform = obj_platform.or(platform)?;
-
-    let family = match platform {
-        "objc" | "cocoa" | "swift" | "native" | "c" => "native",
-        "javascript" | "node" => "javascript",
-        _ => "other",
-    };
-
-    Some(SmolStr::new(family))
-}
-
-fn get_in_app(object: &PyDict) -> bool {
-    let Some(raw) = object.get_item("in_app").ok().flatten() else {
-        return false;
-    };
-
-    raw.extract().unwrap_or_default()
-}
-
-/*
-
-// normalize path:
-let mut value = value.replace('\\', "/");
-
-def create_match_frame(frame_data: dict, platform: Optional[str]) -> dict:
-    """Create flat dict of values relevant to matchers"""
-    match_frame = dict(
-        category=get_path(frame_data, "data", "category"),
-        family=get_behavior_family_for_platform(frame_data.get("platform") or platform),
-        function=_get_function_name(frame_data, platform),
-        in_app=frame_data.get("in_app") or False,
-        module=get_path(frame_data, "module"),
-        package=frame_data.get("package"),
-        path=frame_data.get("abs_path") or frame_data.get("filename"),
-    )
-
-    for key in list(match_frame.keys()):
-        value = match_frame[key]
-        if isinstance(value, (bytes, str)):
-            if key in ("package", "path"):
-                value = match_frame[key] = value.lower()
-
-            if isinstance(value, str):
-                match_frame[key] = value.encode("utf-8")
-
-    return match_frame
-      */
-fn frame_from_pydict(frame: &PyDict) -> Frame {
-    todo!()
-}
-pub fn apply_modifications_to_py_object(frame: &Frame, dict: &PyDict) {}
 
 #[pyclass]
-pub struct Enhancements(RustEnhancements);
+pub struct Cache(CacheInner);
+
+pub enum CacheInner {
+    Noop(enhancers::NoopCache),
+    Lru(enhancers::LruCache),
+}
+
+#[pymethods]
+impl Cache {
+    #[new]
+    fn new(size: usize) -> PyResult<Self> {
+        Ok(match size.try_into() {
+            Ok(size) => Self(CacheInner::Lru(enhancers::LruCache::new(size))),
+            Err(_) => Self(CacheInner::Noop(enhancers::NoopCache)),
+        })
+    }
+}
+
+impl enhancers::Cache for Cache {
+    fn get_or_try_insert<F>(&mut self, key: &str, f: F) -> anyhow::Result<enhancers::Rule>
+    where
+        F: Fn(&str) -> anyhow::Result<enhancers::Rule>,
+    {
+        match &mut self.0 {
+            CacheInner::Noop(cache) => cache.get_or_try_insert(key, f),
+            CacheInner::Lru(cache) => cache.get_or_try_insert(key, f),
+        }
+    }
+}
+
+#[pyclass]
+pub struct Enhancements(enhancers::Enhancements);
 
 #[pymethods]
 impl Enhancements {
     #[new]
-    fn new(input: &str) -> PyResult<Self> {
-        let inner = RustEnhancements::parse(input, NoopCache)?;
+    fn new(input: &str, cache: &mut Cache) -> PyResult<Self> {
+        let inner = enhancers::Enhancements::parse(input, cache)?;
         Ok(Self(inner))
     }
 
     fn apply_modifications_to_frames(
         &self,
-        frames: Vec<&PyDict>,
-        platform: &str,
-        exception_data: &PyDict,
-    ) {
+        py: Python,
+        frames: &PyIterator,
+        exception_data: ExceptionData,
+    ) -> PyResult<Vec<PyObject>> {
+        let mut frames: Vec<_> = frames
+            .map(|frame| {
+                let frame: Frame = frame?.extract()?;
+                let frame = enhancers::Frame {
+                    category: frame.category.0,
+                    family: frame.family.0,
+                    function: frame.function.0,
+                    module: frame.module.0,
+                    package: frame.package.0,
+                    path: frame.path.0,
+                    in_app: frame.in_app,
+                };
+                Ok(frame)
+            })
+            .collect::<PyResult<_>>()?;
+
+        let exception_data = enhancers::ExceptionData {
+            ty: exception_data.ty.0,
+            value: exception_data.value.0,
+            mechanism: exception_data.mechanism.0,
+        };
+
+        self.0
+            .apply_modifications_to_frames(&mut frames, &exception_data);
+
+        let result = frames
+            .into_iter()
+            .map(|f| frame_to_dict(py, f))
+            .collect::<PyResult<_>>()?;
+
+        Ok(result)
     }
+}
+
+fn frame_to_dict(py: Python, frame: enhancers::Frame) -> PyResult<PyObject> {
+    use enhancers::StringField;
+
+    let obj = PyDict::new(py);
+    obj.set_item("category", frame.category.as_ref().map(StringField::as_str))?;
+    obj.set_item("family", frame.family.as_ref().map(StringField::as_str))?;
+    obj.set_item("function", frame.function.as_ref().map(StringField::as_str))?;
+    obj.set_item("module", frame.module.as_ref().map(StringField::as_str))?;
+
+    obj.set_item("package", frame.package.as_ref().map(StringField::as_str))?;
+    obj.set_item("path", frame.path.as_ref().map(StringField::as_str))?;
+    obj.set_item("in_app", frame.in_app)?;
+
+    Ok(obj.into())
 }

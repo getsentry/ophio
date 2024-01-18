@@ -8,6 +8,7 @@ name = "sentry_ophio"
 crate-type = ["cdylib"]
 
 [dependencies]
+anyhow = "1.0.79"
 proguard = { version = "5.4.0", features = ["uuid"] }
 pyo3 = { version = "0.20.0", features = [
     "anyhow",
