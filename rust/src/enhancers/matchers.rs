@@ -1,5 +1,8 @@
+use std::fmt;
+
 use globset::GlobBuilder;
 use regex::bytes::{Regex, RegexBuilder};
+use smol_str::SmolStr;
 
 use super::frame::{Frame, FrameField, StringField};
 use super::ExceptionData;
@@ -14,11 +17,17 @@ pub(crate) enum Matcher {
 }
 
 impl Matcher {
-    fn new_frame(negated: bool, frame_offset: FrameOffset, inner: FrameMatcherInner) -> Self {
+    fn new_frame(
+        negated: bool,
+        frame_offset: FrameOffset,
+        inner: FrameMatcherInner,
+        raw_pattern: &str,
+    ) -> Self {
         Self::Frame(FrameMatcher {
             negated,
             frame_offset,
             inner,
+            raw_pattern: SmolStr::new(raw_pattern),
         })
     }
 
@@ -34,16 +43,19 @@ impl Matcher {
                 negated,
                 frame_offset,
                 FrameMatcherInner::new_field(FrameField::Module, false, argument)?,
+                argument,
             )),
             "stack.function" | "function" => Ok(Self::new_frame(
                 negated,
                 frame_offset,
                 FrameMatcherInner::new_field(FrameField::Function, false, argument)?,
+                argument,
             )),
             "category" => Ok(Self::new_frame(
                 negated,
                 frame_offset,
                 FrameMatcherInner::new_field(FrameField::Category, false, argument)?,
+                argument,
             )),
 
             // Path matchers
@@ -51,11 +63,13 @@ impl Matcher {
                 negated,
                 frame_offset,
                 FrameMatcherInner::new_field(FrameField::Path, true, argument)?,
+                argument,
             )),
             "stack.package" | "package" => Ok(Self::new_frame(
                 negated,
                 frame_offset,
                 FrameMatcherInner::new_field(FrameField::Package, true, argument)?,
+                argument,
             )),
 
             // Family matcher
@@ -63,6 +77,7 @@ impl Matcher {
                 negated,
                 frame_offset,
                 FrameMatcherInner::new_family(argument),
+                argument,
             )),
 
             // InApp matcher
@@ -70,6 +85,7 @@ impl Matcher {
                 negated,
                 frame_offset,
                 FrameMatcherInner::new_in_app(argument)?,
+                argument,
             )),
 
             // Exception matchers
@@ -103,6 +119,7 @@ pub struct FrameMatcher {
     negated: bool,
     frame_offset: FrameOffset,
     inner: FrameMatcherInner,
+    raw_pattern: SmolStr,
 }
 
 impl FrameMatcher {
@@ -122,6 +139,37 @@ impl FrameMatcher {
         };
 
         self.negated ^ self.inner.matches_frame(frame)
+    }
+}
+
+impl fmt::Display for FrameMatcher {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let FrameMatcher {
+            negated,
+            frame_offset,
+            inner,
+            raw_pattern,
+        } = self;
+
+        match frame_offset {
+            FrameOffset::Caller => write!(f, "[")?,
+            FrameOffset::Callee => write!(f, "| [")?,
+            FrameOffset::None => {}
+        }
+
+        if *negated {
+            write!(f, "!")?;
+        }
+
+        write!(f, "{inner}:{raw_pattern}")?;
+
+        match frame_offset {
+            FrameOffset::Caller => write!(f, "] |")?,
+            FrameOffset::Callee => write!(f, "]")?,
+            FrameOffset::None => {}
+        }
+
+        Ok(())
     }
 }
 
@@ -204,6 +252,16 @@ impl FrameMatcherInner {
     }
 }
 
+impl fmt::Display for FrameMatcherInner {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            FrameMatcherInner::Field { field, .. } => write!(f, "{field}"),
+            FrameMatcherInner::Family { .. } => write!(f, "family"),
+            FrameMatcherInner::InApp { .. } => write!(f, "app"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 enum ExceptionMatcherType {
     Type,
@@ -211,38 +269,52 @@ enum ExceptionMatcherType {
     Mechanism,
 }
 
+impl fmt::Display for ExceptionMatcherType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ExceptionMatcherType::Type => write!(f, "type"),
+            ExceptionMatcherType::Value => write!(f, "value"),
+            ExceptionMatcherType::Mechanism => write!(f, "mechanism"),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ExceptionMatcher {
     negated: bool,
     pattern: Regex,
     ty: ExceptionMatcherType,
+    raw_pattern: SmolStr,
 }
 
 impl ExceptionMatcher {
-    fn new_type(negated: bool, pattern: &str) -> anyhow::Result<Self> {
-        let pattern = translate_pattern(pattern, false)?;
+    fn new_type(negated: bool, raw_pattern: &str) -> anyhow::Result<Self> {
+        let pattern = translate_pattern(raw_pattern, false)?;
         Ok(Self {
             negated,
             pattern,
             ty: ExceptionMatcherType::Type,
+            raw_pattern: SmolStr::new(raw_pattern),
         })
     }
 
-    fn new_value(negated: bool, pattern: &str) -> anyhow::Result<Self> {
-        let pattern = translate_pattern(pattern, false)?;
+    fn new_value(negated: bool, raw_pattern: &str) -> anyhow::Result<Self> {
+        let pattern = translate_pattern(raw_pattern, false)?;
         Ok(Self {
             negated,
             pattern,
             ty: ExceptionMatcherType::Value,
+            raw_pattern: SmolStr::new(raw_pattern),
         })
     }
 
-    fn new_mechanism(negated: bool, pattern: &str) -> anyhow::Result<Self> {
-        let pattern = translate_pattern(pattern, false)?;
+    fn new_mechanism(negated: bool, raw_pattern: &str) -> anyhow::Result<Self> {
+        let pattern = translate_pattern(raw_pattern, false)?;
         Ok(Self {
             negated,
             pattern,
             ty: ExceptionMatcherType::Mechanism,
+            raw_pattern: SmolStr::new(raw_pattern),
         })
     }
 
@@ -255,6 +327,23 @@ impl ExceptionMatcher {
 
         let value = value.as_deref().unwrap_or("<unknown>").as_bytes();
         self.negated ^ self.pattern.is_match(value)
+    }
+}
+
+impl fmt::Display for ExceptionMatcher {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let ExceptionMatcher {
+            negated,
+            raw_pattern,
+            ty,
+            ..
+        } = self;
+
+        if *negated {
+            write!(f, "!")?;
+        }
+
+        write!(f, "{ty}:{raw_pattern}")
     }
 }
 

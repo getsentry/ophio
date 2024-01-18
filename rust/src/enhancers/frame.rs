@@ -1,3 +1,5 @@
+use std::fmt;
+
 use smol_str::SmolStr;
 
 pub type StringField = SmolStr;
@@ -21,6 +23,19 @@ pub enum FrameField {
     Module,
     Package,
     Path,
+}
+
+impl fmt::Display for FrameField {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            FrameField::Category => write!(f, "category"),
+            FrameField::Family => write!(f, "family"),
+            FrameField::Function => write!(f, "function"),
+            FrameField::Module => write!(f, "module"),
+            FrameField::Package => write!(f, "package"),
+            FrameField::Path => write!(f, "path"),
+        }
+    }
 }
 
 impl Frame {
