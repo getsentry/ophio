@@ -1,52 +1,36 @@
-use std::num::NonZeroUsize;
+use lru::LruCache;
 
 use super::rules::Rule;
 
-pub trait Cache {
-    fn get_or_try_insert<F>(&mut self, key: &str, f: F) -> anyhow::Result<Rule>
-    where
-        F: Fn(&str) -> anyhow::Result<Rule>;
-}
+/// An LRU cache for parsing [`Rule`]s.
+#[derive(Debug, Default)]
+pub struct Cache(Option<LruCache<Box<str>, Rule>>);
 
-// Rust, Y U NO impl this by default?
-impl<C: Cache> Cache for &mut C {
-    fn get_or_try_insert<F>(&mut self, key: &str, f: F) -> anyhow::Result<Rule>
+impl Cache {
+    /// Creates a new cache with the given size.
+    ///
+    /// If `size` is 0, no caching will be performed.
+    pub fn new(size: usize) -> Self {
+        Self(size.try_into().ok().map(|n| LruCache::new(n)))
+    }
+
+    /// Gets the rule for the string `key` from the cache or computes and inserts
+    /// it using `f` if it is not present.
+    pub fn get_or_try_insert<F>(&mut self, key: &str, f: F) -> anyhow::Result<Rule>
     where
         F: Fn(&str) -> anyhow::Result<Rule>,
     {
-        (*self).get_or_try_insert(key, f)
-    }
-}
+        match self.0.as_mut() {
+            Some(cache) => {
+                if let Some(rule) = cache.get(key) {
+                    return Ok(rule.clone());
+                }
 
-pub struct NoopCache;
-impl Cache for NoopCache {
-    fn get_or_try_insert<F>(&mut self, key: &str, f: F) -> anyhow::Result<Rule>
-    where
-        F: Fn(&str) -> anyhow::Result<Rule>,
-    {
-        f(key)
-    }
-}
-
-pub struct LruCache(lru::LruCache<Box<str>, Rule>);
-
-impl LruCache {
-    pub fn new(size: NonZeroUsize) -> Self {
-        Self(lru::LruCache::new(size))
-    }
-}
-
-impl Cache for LruCache {
-    fn get_or_try_insert<F>(&mut self, key: &str, f: F) -> anyhow::Result<Rule>
-    where
-        F: Fn(&str) -> anyhow::Result<Rule>,
-    {
-        if let Some(rule) = self.0.get(key) {
-            return Ok(rule.clone());
+                let rule = f(key)?;
+                cache.put(key.into(), rule.clone());
+                Ok(rule)
+            }
+            None => f(key),
         }
-
-        let rule = f(key)?;
-        self.0.put(key.into(), rule.clone());
-        Ok(rule)
     }
 }

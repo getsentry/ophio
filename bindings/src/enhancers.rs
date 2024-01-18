@@ -36,33 +36,13 @@ pub struct ExceptionData {
 }
 
 #[pyclass]
-pub struct Cache(CacheInner);
-
-pub enum CacheInner {
-    Noop(enhancers::NoopCache),
-    Lru(enhancers::LruCache),
-}
+pub struct Cache(enhancers::Cache);
 
 #[pymethods]
 impl Cache {
     #[new]
     fn new(size: usize) -> PyResult<Self> {
-        Ok(match size.try_into() {
-            Ok(size) => Self(CacheInner::Lru(enhancers::LruCache::new(size))),
-            Err(_) => Self(CacheInner::Noop(enhancers::NoopCache)),
-        })
-    }
-}
-
-impl enhancers::Cache for Cache {
-    fn get_or_try_insert<F>(&mut self, key: &str, f: F) -> anyhow::Result<enhancers::Rule>
-    where
-        F: Fn(&str) -> anyhow::Result<enhancers::Rule>,
-    {
-        match &mut self.0 {
-            CacheInner::Noop(cache) => cache.get_or_try_insert(key, f),
-            CacheInner::Lru(cache) => cache.get_or_try_insert(key, f),
-        }
+        Ok(Self(enhancers::Cache::new(size)))
     }
 }
 
@@ -73,7 +53,7 @@ pub struct Enhancements(enhancers::Enhancements);
 impl Enhancements {
     #[new]
     fn new(input: &str, cache: &mut Cache) -> PyResult<Self> {
-        let inner = enhancers::Enhancements::parse(input, cache)?;
+        let inner = enhancers::Enhancements::parse(input, &mut cache.0)?;
         Ok(Self(inner))
     }
 
