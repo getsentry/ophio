@@ -66,6 +66,26 @@ impl Enhancements {
             }
         }
     }
+
+    pub fn rules(&self) -> impl Iterator<Item = &Rule> {
+        self.all_rules.iter()
+    }
+
+    pub fn extend_from(&mut self, other: &Enhancements) {
+        self.extend(other.rules().cloned())
+    }
+}
+
+impl Extend<Rule> for Enhancements {
+    fn extend<T: IntoIterator<Item = Rule>>(&mut self, iter: T) {
+        for rule in iter.into_iter() {
+            if rule.has_modifier_action() {
+                self.modifier_rules.push(rule.clone());
+            }
+
+            self.all_rules.push(rule);
+        }
+    }
 }
 
 #[cfg(test)]
