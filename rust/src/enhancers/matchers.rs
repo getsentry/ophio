@@ -1,10 +1,262 @@
-use std::sync::Arc;
-
 use globset::GlobBuilder;
 use regex::bytes::{Regex, RegexBuilder};
 
 use super::frame::{Frame, FrameField, StringField};
 use super::ExceptionData;
+
+/// Enum that wraps a frame or exception matcher.
+///
+/// This exists mostly to allow parsing both frame and exception matchers uniformly.
+#[derive(Debug, Clone)]
+pub(crate) enum Matcher {
+    Frame(FrameMatcher),
+    Exception(ExceptionMatcher),
+}
+
+impl Matcher {
+    fn new_frame(negated: bool, frame_offset: FrameOffset, inner: FrameMatcherInner) -> Self {
+        Self::Frame(FrameMatcher {
+            negated,
+            frame_offset,
+            inner,
+        })
+    }
+
+    pub(crate) fn new(
+        negated: bool,
+        matcher_type: &str,
+        argument: &str,
+        frame_offset: FrameOffset,
+    ) -> anyhow::Result<Self> {
+        match matcher_type {
+            // Field matchers
+            "stack.module" | "module" => Ok(Self::new_frame(
+                negated,
+                frame_offset,
+                FrameMatcherInner::new_field(FrameField::Module, false, argument)?,
+            )),
+            "stack.function" | "function" => Ok(Self::new_frame(
+                negated,
+                frame_offset,
+                FrameMatcherInner::new_field(FrameField::Function, false, argument)?,
+            )),
+            "category" => Ok(Self::new_frame(
+                negated,
+                frame_offset,
+                FrameMatcherInner::new_field(FrameField::Category, false, argument)?,
+            )),
+
+            // Path matchers
+            "stack.abs_path" | "path" => Ok(Self::new_frame(
+                negated,
+                frame_offset,
+                FrameMatcherInner::new_field(FrameField::Path, true, argument)?,
+            )),
+            "stack.package" | "package" => Ok(Self::new_frame(
+                negated,
+                frame_offset,
+                FrameMatcherInner::new_field(FrameField::Package, true, argument)?,
+            )),
+
+            // Family matcher
+            "family" => Ok(Self::new_frame(
+                negated,
+                frame_offset,
+                FrameMatcherInner::new_family(argument),
+            )),
+
+            // InApp matcher
+            "app" => Ok(Self::new_frame(
+                negated,
+                frame_offset,
+                FrameMatcherInner::new_in_app(argument)?,
+            )),
+
+            // Exception matchers
+            "error.type" | "type" => Ok(Self::Exception(ExceptionMatcher::new_type(
+                negated, argument,
+            )?)),
+
+            "error.value" | "value" => Ok(Self::Exception(ExceptionMatcher::new_value(
+                negated, argument,
+            )?)),
+
+            "error.mechanism" | "mechanism" => Ok(Self::Exception(
+                ExceptionMatcher::new_mechanism(negated, argument)?,
+            )),
+
+            matcher_type => anyhow::bail!("Unknown matcher `{matcher_type}`"),
+        }
+    }
+}
+
+/// Denotes whether a frame matcher applies to the current frame or one of the adjacent frames.
+#[derive(Debug, Clone, Copy)]
+pub(crate) enum FrameOffset {
+    Caller,
+    Callee,
+    None,
+}
+
+#[derive(Debug, Clone)]
+pub struct FrameMatcher {
+    negated: bool,
+    frame_offset: FrameOffset,
+    inner: FrameMatcherInner,
+}
+
+impl FrameMatcher {
+    pub fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
+        let idx = match self.frame_offset {
+            FrameOffset::Caller => idx.checked_sub(1),
+            FrameOffset::Callee => idx.checked_add(1),
+            FrameOffset::None => Some(idx),
+        };
+
+        let Some(idx) = idx else {
+            return false;
+        };
+
+        let Some(frame) = frames.get(idx) else {
+            return false;
+        };
+
+        self.negated ^ self.inner.matches_frame(frame)
+    }
+}
+
+#[derive(Debug, Clone)]
+enum FrameMatcherInner {
+    /// Checks whether a particular field of a frame conforms to a pattern.
+    Field {
+        field: FrameField,
+        path_like: bool,
+        pattern: Regex,
+    },
+    /// Checks whether a frame's family is contained in a given list of families.
+    Family {
+        // NOTE: This is a `Vec` because we typically only have a single item.
+        // NOTE: we optimize for `"all"` by just storing an empty `Vec` and checking for that
+        families: Vec<StringField>,
+    },
+    /// Checks whether a frame's in_app field is equal to an expected value.
+    InApp { expected: bool },
+}
+
+impl FrameMatcherInner {
+    fn new_field(field: FrameField, path_like: bool, pattern: &str) -> anyhow::Result<Self> {
+        let pattern = translate_pattern(pattern, path_like)?;
+        Ok(Self::Field {
+            field,
+            path_like,
+            pattern,
+        })
+    }
+
+    fn new_family(families: &str) -> Self {
+        let mut families: Vec<_> = families.split(',').map(StringField::new).collect();
+        if families.contains(&StringField::new("all")) {
+            families = vec![];
+        }
+
+        Self::Family { families }
+    }
+
+    fn new_in_app(expected: &str) -> anyhow::Result<Self> {
+        match expected {
+            "1" | "true" | "yes" => Ok(Self::InApp { expected: true }),
+            "0" | "false" | "no" => Ok(Self::InApp { expected: false }),
+            _ => Err(anyhow::anyhow!("Invalid value for `app`: `{expected}`")),
+        }
+    }
+
+    fn matches_frame(&self, frame: &Frame) -> bool {
+        match self {
+            FrameMatcherInner::Field {
+                field,
+                path_like,
+                pattern,
+            } => {
+                let Some(value) = frame.get_field(*field) else {
+                    return false;
+                };
+
+                if pattern.is_match(value.as_bytes()) {
+                    return true;
+                }
+
+                if *path_like && !value.starts_with('/') {
+                    // TODO: avoid
+                    let value = format!("/{value}");
+                    return pattern.is_match(value.as_bytes());
+                }
+                false
+            }
+            FrameMatcherInner::Family { families } => {
+                let Some(value) = frame.get_field(FrameField::Family) else {
+                    return false;
+                };
+
+                families.is_empty() || families.contains(value)
+            }
+            FrameMatcherInner::InApp { expected } => frame.in_app == *expected,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+enum ExceptionMatcherType {
+    Type,
+    Value,
+    Mechanism,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExceptionMatcher {
+    negated: bool,
+    pattern: Regex,
+    ty: ExceptionMatcherType,
+}
+
+impl ExceptionMatcher {
+    fn new_type(negated: bool, pattern: &str) -> anyhow::Result<Self> {
+        let pattern = translate_pattern(pattern, false)?;
+        Ok(Self {
+            negated,
+            pattern,
+            ty: ExceptionMatcherType::Type,
+        })
+    }
+
+    fn new_value(negated: bool, pattern: &str) -> anyhow::Result<Self> {
+        let pattern = translate_pattern(pattern, false)?;
+        Ok(Self {
+            negated,
+            pattern,
+            ty: ExceptionMatcherType::Value,
+        })
+    }
+
+    fn new_mechanism(negated: bool, pattern: &str) -> anyhow::Result<Self> {
+        let pattern = translate_pattern(pattern, false)?;
+        Ok(Self {
+            negated,
+            pattern,
+            ty: ExceptionMatcherType::Mechanism,
+        })
+    }
+
+    pub fn matches_exception(&self, exception_data: &ExceptionData) -> bool {
+        let value = match self.ty {
+            ExceptionMatcherType::Type => &exception_data.ty,
+            ExceptionMatcherType::Value => &exception_data.value,
+            ExceptionMatcherType::Mechanism => &exception_data.mechanism,
+        };
+
+        let value = value.as_deref().unwrap_or("<unknown>").as_bytes();
+        self.negated ^ self.pattern.is_match(value)
+    }
+}
 
 fn translate_pattern(pat: &str, is_path_matcher: bool) -> anyhow::Result<Regex> {
     let pat = if is_path_matcher {
@@ -17,350 +269,6 @@ fn translate_pattern(pat: &str, is_path_matcher: bool) -> anyhow::Result<Regex> 
     builder.case_insensitive(true);
     let glob = builder.build()?;
     Ok(RegexBuilder::new(glob.regex()).build()?)
-}
-
-#[derive(Clone)]
-pub enum Matcher {
-    Frame(Arc<dyn FrameMatcher + Send + Sync>),
-    Exception(Arc<dyn ExceptionMatcher + Send + Sync>),
-}
-
-// TODO: take `caller/e` as argument
-pub fn get_matcher(
-    negated: bool,
-    matcher_type: &str,
-    argument: &str,
-    caller: bool,
-    callee: bool,
-) -> anyhow::Result<Matcher> {
-    let matcher = match matcher_type {
-        // Field matchers
-        "stack.module" | "module" => Matcher::Frame(create_frame_matcher(
-            negated,
-            caller,
-            callee,
-            FrameFieldMatch::new(FrameField::Module, argument)?,
-        )),
-        "stack.function" | "function" => Matcher::Frame(create_frame_matcher(
-            negated,
-            caller,
-            callee,
-            FrameFieldMatch::new(FrameField::Function, argument)?,
-        )),
-        "category" => Matcher::Frame(create_frame_matcher(
-            negated,
-            caller,
-            callee,
-            FrameFieldMatch::new(FrameField::Category, argument)?,
-        )),
-
-        // Path matchers
-        "stack.abs_path" | "path" => Matcher::Frame(create_frame_matcher(
-            negated,
-            caller,
-            callee,
-            PathLikeMatch::new(FrameField::Path, argument)?,
-        )),
-        "stack.package" | "package" => Matcher::Frame(create_frame_matcher(
-            negated,
-            caller,
-            callee,
-            PathLikeMatch::new(FrameField::Package, argument)?,
-        )),
-
-        // Family matcher
-        "family" => Matcher::Frame(create_frame_matcher(
-            negated,
-            caller,
-            callee,
-            FamilyMatch::new(argument),
-        )),
-
-        // InApp matcher
-        "app" => Matcher::Frame(create_frame_matcher(
-            negated,
-            caller,
-            callee,
-            InAppMatch::new(argument)?,
-        )),
-
-        // Exception matchers
-        "error.type" | "type" => Matcher::Exception(create_exception_matcher(
-            negated,
-            ExceptionTypeMatch::new(argument)?,
-        )),
-        "error.value" | "value" => Matcher::Exception(create_exception_matcher(
-            negated,
-            ExceptionValueMatch::new(argument)?,
-        )),
-        "error.mechanism" | "mechanism" => Matcher::Exception(create_exception_matcher(
-            negated,
-            ExceptionMechanismMatch::new(argument)?,
-        )),
-
-        matcher_type => anyhow::bail!("Unknown matcher `{matcher_type}`"),
-    };
-
-    Ok(matcher)
-}
-
-pub trait FrameMatcher: Send + Sync + 'static {
-    fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool;
-}
-
-trait SimpleFieldMatcher: Send + Sync + 'static {
-    fn field(&self) -> FrameField;
-    fn matches_value(&self, value: &StringField) -> bool;
-}
-
-impl<S: SimpleFieldMatcher> FrameMatcher for S {
-    fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
-        let Some(frame) = frames.get(idx) else {
-            return false;
-        };
-
-        let Some(value) = frame.get_field(self.field()) else {
-            return false;
-        };
-
-        self.matches_value(value)
-    }
-}
-
-#[derive(Debug, Clone)]
-struct NegationWrapper<M> {
-    negated: bool,
-    inner: M,
-}
-
-impl<M: FrameMatcher> FrameMatcher for NegationWrapper<M> {
-    fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
-        self.negated ^ self.inner.matches_frame(frames, idx)
-    }
-}
-
-pub fn create_frame_matcher<M: FrameMatcher + Send + Sync + 'static>(
-    negated: bool,
-    caller: bool,
-    callee: bool,
-    matcher: M,
-) -> Arc<dyn FrameMatcher + Send + Sync> {
-    if caller {
-        Arc::new(CallerMatch(NegationWrapper {
-            negated,
-            inner: matcher,
-        }))
-    } else if callee {
-        Arc::new(CalleeMatch(NegationWrapper {
-            negated,
-            inner: matcher,
-        }))
-    } else {
-        Arc::new(NegationWrapper {
-            negated,
-            inner: matcher,
-        })
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct FrameFieldMatch {
-    field: FrameField, // function, module, category
-    pattern: Regex,
-}
-
-impl FrameFieldMatch {
-    pub fn new(field: FrameField, pattern: &str) -> anyhow::Result<Self> {
-        let pattern = translate_pattern(pattern, false)?;
-
-        Ok(Self { field, pattern })
-    }
-}
-
-impl SimpleFieldMatcher for FrameFieldMatch {
-    fn field(&self) -> FrameField {
-        self.field
-    }
-    fn matches_value(&self, value: &StringField) -> bool {
-        self.pattern.is_match(value.as_bytes())
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct PathLikeMatch {
-    field: FrameField, // package, path
-    pattern: Regex,
-}
-
-impl PathLikeMatch {
-    pub fn new(field: FrameField, pattern: &str) -> anyhow::Result<Self> {
-        let pattern = translate_pattern(pattern, true)?;
-
-        Ok(Self { field, pattern })
-    }
-}
-
-impl SimpleFieldMatcher for PathLikeMatch {
-    fn field(&self) -> FrameField {
-        self.field
-    }
-
-    fn matches_value(&self, value: &StringField) -> bool {
-        if self.pattern.is_match(value.as_bytes()) {
-            return true;
-        }
-        if !value.starts_with('/') {
-            // TODO: avoid
-            let value = format!("/{value}");
-            return self.pattern.is_match(value.as_bytes());
-        }
-        false
-    }
-}
-
-#[derive(Debug, Clone)]
-struct FamilyMatch {
-    // NOTE: This is a `Vec` because we typically only have a single item.
-    // NOTE: we optimize for `"all"` by just storing an empty `Vec` and checking for that
-    families: Vec<StringField>,
-}
-
-impl FamilyMatch {
-    fn new(families: &str) -> Self {
-        let mut families: Vec<_> = families.split(',').map(StringField::new).collect();
-        if families.contains(&StringField::new("all")) {
-            families = vec![];
-        }
-
-        Self { families }
-    }
-}
-
-impl SimpleFieldMatcher for FamilyMatch {
-    fn field(&self) -> FrameField {
-        FrameField::Family
-    }
-
-    fn matches_value(&self, value: &StringField) -> bool {
-        self.families.is_empty() || self.families.contains(value)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct InAppMatch {
-    expected: bool,
-}
-
-impl InAppMatch {
-    pub fn new(expected: &str) -> anyhow::Result<Self> {
-        match expected {
-            "1" | "true" | "yes" => Ok(Self { expected: true }),
-            "0" | "false" | "no" => Ok(Self { expected: false }),
-            _ => Err(anyhow::anyhow!("Invalid value for `app`: `{expected}`")),
-        }
-    }
-}
-
-impl FrameMatcher for InAppMatch {
-    fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
-        let Some(frame) = frames.get(idx) else {
-            return false;
-        };
-
-        frame.in_app == self.expected
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct CallerMatch<M>(M);
-
-impl<M: FrameMatcher> FrameMatcher for CallerMatch<M> {
-    fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
-        idx > 0 && self.0.matches_frame(frames, idx - 1)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct CalleeMatch<M>(M);
-
-impl<M: FrameMatcher> FrameMatcher for CalleeMatch<M> {
-    fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
-        !frames.is_empty() && idx < frames.len() - 1 && self.0.matches_frame(frames, idx + 1)
-    }
-}
-
-pub trait ExceptionMatcher: Send + Sync + 'static {
-    fn matches_exception(&self, exception_data: &ExceptionData) -> bool;
-}
-
-pub struct ExceptionTypeMatch {
-    pattern: Regex,
-}
-
-impl ExceptionTypeMatch {
-    pub fn new(pattern: &str) -> anyhow::Result<Self> {
-        let pattern = translate_pattern(pattern, false)?;
-        Ok(Self { pattern })
-    }
-}
-
-impl ExceptionMatcher for ExceptionTypeMatch {
-    fn matches_exception(&self, exception_data: &ExceptionData) -> bool {
-        let ty = exception_data.ty.as_deref().unwrap_or("<unknown>");
-        self.pattern.is_match(ty.as_bytes())
-    }
-}
-
-pub struct ExceptionValueMatch {
-    pattern: Regex,
-}
-
-impl ExceptionValueMatch {
-    pub fn new(pattern: &str) -> anyhow::Result<Self> {
-        let pattern = translate_pattern(pattern, false)?;
-        Ok(Self { pattern })
-    }
-}
-
-impl ExceptionMatcher for ExceptionValueMatch {
-    fn matches_exception(&self, exception_data: &ExceptionData) -> bool {
-        let value = exception_data.value.as_deref().unwrap_or("<unknown>");
-        self.pattern.is_match(value.as_bytes())
-    }
-}
-
-pub struct ExceptionMechanismMatch {
-    pattern: Regex,
-}
-
-impl ExceptionMechanismMatch {
-    pub fn new(pattern: &str) -> anyhow::Result<Self> {
-        let pattern = translate_pattern(pattern, false)?;
-        Ok(Self { pattern })
-    }
-}
-
-impl ExceptionMatcher for ExceptionMechanismMatch {
-    fn matches_exception(&self, exception_data: &ExceptionData) -> bool {
-        let mechanism = exception_data.mechanism.as_deref().unwrap_or("<unknown>");
-        self.pattern.is_match(mechanism.as_bytes())
-    }
-}
-
-impl<M: ExceptionMatcher> ExceptionMatcher for NegationWrapper<M> {
-    fn matches_exception(&self, exception_data: &ExceptionData) -> bool {
-        self.negated ^ self.inner.matches_exception(exception_data)
-    }
-}
-
-pub fn create_exception_matcher<M: ExceptionMatcher + Send + Sync + 'static>(
-    negated: bool,
-    matcher: M,
-) -> Arc<dyn ExceptionMatcher + Send + Sync> {
-    Arc::new(NegationWrapper {
-        negated,
-        inner: matcher,
-    })
 }
 
 #[cfg(test)]

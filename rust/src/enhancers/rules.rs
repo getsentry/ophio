@@ -10,8 +10,8 @@ use super::ExceptionData;
 pub struct Rule(pub(crate) Arc<RuleInner>);
 
 pub struct RuleInner {
-    pub frame_matchers: Vec<Arc<dyn FrameMatcher + Send + Sync>>,
-    pub exception_matchers: Vec<Arc<dyn ExceptionMatcher + Send + Sync>>,
+    pub frame_matchers: Vec<FrameMatcher>,
+    pub exception_matchers: Vec<ExceptionMatcher>,
     pub actions: Vec<Action>,
 }
 

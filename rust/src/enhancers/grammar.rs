@@ -85,7 +85,7 @@ mod nom {
     use crate::enhancers::actions::{
         Action, FlagAction, FlagActionType, Range, VarAction, VarName,
     };
-    use crate::enhancers::matchers::{get_matcher, Matcher};
+    use crate::enhancers::matchers::{FrameOffset, Matcher};
     use crate::enhancers::rules::{Rule, RuleInner};
     use crate::enhancers::Enhancements;
 
@@ -93,7 +93,7 @@ mod nom {
         take_while1(|c: char| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-'))(input)
     }
 
-    fn frame_matcher(caller: bool, callee: bool) -> impl Fn(&str) -> IResult<&str, Matcher> {
+    fn frame_matcher(frame_offset: FrameOffset) -> impl Fn(&str) -> IResult<&str, Matcher> {
         move |input| {
             let input = input.trim_start();
 
@@ -114,7 +114,7 @@ mod nom {
             let mut matcher = map_res(
                 tuple((opt(char('!')), matcher_type, char(':'), argument)),
                 |(negated, matcher_type, _, argument): (_, _, _, &str)| {
-                    get_matcher(negated.is_some(), matcher_type, argument, caller, callee)
+                    Matcher::new(negated.is_some(), matcher_type, argument, frame_offset)
                 },
             );
 
@@ -129,7 +129,7 @@ mod nom {
             space0,
             char('['),
             space0,
-            frame_matcher(true, false),
+            frame_matcher(FrameOffset::Caller),
             space0,
             char(']'),
             space0,
@@ -141,14 +141,14 @@ mod nom {
             space0,
             char('['),
             space0,
-            frame_matcher(false, true),
+            frame_matcher(FrameOffset::Callee),
             space0,
             char(']'),
         ));
 
         let mut matchers = tuple((
             opt(caller_matcher),
-            many1(frame_matcher(false, false)),
+            many1(frame_matcher(FrameOffset::None)),
             opt(callee_matcher),
         ));
 
