@@ -20,7 +20,7 @@ pub struct ExceptionData {
 
 #[derive(Debug)]
 pub struct Enhancements {
-    all_rules: Vec<Rule>,
+    pub(crate) all_rules: Vec<Rule>,
     modifier_rules: Vec<Rule>,
 }
 
