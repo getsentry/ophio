@@ -62,17 +62,12 @@ def create_match_frame(frame_data: dict, platform: Optional[str]) -> dict:
     return match_frame
 
 
-# TODO: move into python bindings layer
-@dataclass
-class ExceptionData:
-    ty: str | None = None
-    value: str | None = None
-    mechanism: str | None = None
-
 def test_simple_enhancer():
     cache = Cache(1_000)
     enhancer = Enhancements("path:**/test.js              +app", cache)
 
     frames = [create_match_frame({"abs_path": "http://example.com/foo/test.js", "filename": "/foo/test.js"}, "javascript")]
-    modified_frames = enhancer.apply_modifications_to_frames(iter(frames), ExceptionData())
+    exception_data = {"ty": None, "value": None, "mechanism": None}
+
+    modified_frames = enhancer.apply_modifications_to_frames(iter(frames), exception_data)
     print(modified_frames)

@@ -28,6 +28,7 @@ impl FromPyObject<'_> for OptStr {
 }
 
 #[derive(FromPyObject)]
+#[pyo3(from_item_all)]
 pub struct ExceptionData {
     ty: OptStr,
     value: OptStr,
