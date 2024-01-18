@@ -1,4 +1,3 @@
-use std::fmt;
 use std::sync::Arc;
 
 use super::actions::Action;
