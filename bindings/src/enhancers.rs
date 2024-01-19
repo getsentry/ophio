@@ -71,6 +71,7 @@ impl Enhancements {
                     family: frame.family.0,
                     function: frame.function.0,
                     module: frame.module.0,
+                    orig_in_app: None,
                     package: frame.package.0,
                     path: frame.path.0,
                     in_app: frame.in_app,

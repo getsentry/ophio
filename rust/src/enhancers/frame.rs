@@ -11,6 +11,7 @@ pub struct Frame {
     pub function: Option<StringField>,
     pub in_app: bool,
     pub module: Option<StringField>,
+    pub orig_in_app: Option<bool>,
     pub package: Option<StringField>,
     pub path: Option<StringField>,
 }
@@ -75,6 +76,8 @@ impl Frame {
                 .get("module")
                 .and_then(|s| s.as_str())
                 .map(SmolStr::new),
+
+            orig_in_app: None,
 
             package: raw_frame
                 .get("package")
