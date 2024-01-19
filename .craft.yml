@@ -9,7 +9,7 @@ statusProvider:
 artifactProvider:
   name: github
 
-preReleaseCommand: bash scripts/bump-version
+preReleaseCommand: bash scripts/bump-version.sh
 targets:
   - name: pypi
   - name: sentry-pypi
