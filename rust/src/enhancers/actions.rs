@@ -142,17 +142,6 @@ impl fmt::Display for FlagAction {
     }
 }
 
-impl fmt::Display for VarName {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            VarName::MinFrames => write!(f, "min-frames"),
-            VarName::MaxFrames => write!(f, "max-frames"),
-            VarName::Category => write!(f, "category"),
-            VarName::InvertStacktrace => write!(f, "invert-stacktrace"),
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VarAction {
     MinFrames(usize),
@@ -244,15 +233,6 @@ impl Action {
                     state.invert_stacktrace.setter = Some(rule);
                 }
             }
-        }
-    }
-}
-
-impl fmt::Display for Action {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Action::Flag(a) => a.fmt(f),
-            Action::Var(a) => a.fmt(f),
         }
     }
 }
