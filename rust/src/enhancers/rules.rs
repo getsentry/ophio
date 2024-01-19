@@ -18,16 +18,29 @@ pub struct RuleInner {
 
 impl fmt::Display for Rule {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut first = true;
         for m in &self.0.exception_matchers {
-            write!(f, "{m} ")?;
+            if !first {
+                write!(f, " ")?;
+            }
+            write!(f, "{m}")?;
+            first = false;
         }
 
         for m in &self.0.frame_matchers {
-            write!(f, "{m} ")?;
+            if !first {
+                write!(f, " ")?;
+            }
+            write!(f, "{m}")?;
+            first = false;
         }
 
         for a in &self.0.actions {
-            write!(f, "{a} ")?;
+            if !first {
+                write!(f, " ")?;
+            }
+            write!(f, "{a}")?;
+            first = false;
         }
 
         Ok(())
