@@ -1,3 +1,4 @@
+use std::fmt;
 use std::sync::Arc;
 
 use super::actions::Action;
@@ -13,6 +14,24 @@ pub struct RuleInner {
     pub frame_matchers: Vec<FrameMatcher>,
     pub exception_matchers: Vec<ExceptionMatcher>,
     pub actions: Vec<Action>,
+}
+
+impl fmt::Display for Rule {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for m in &self.0.exception_matchers {
+            write!(f, "{m} ")?;
+        }
+
+        for m in &self.0.frame_matchers {
+            write!(f, "{m} ")?;
+        }
+
+        for a in &self.0.actions {
+            write!(f, "{a} ")?;
+        }
+
+        Ok(())
+    }
 }
 
 impl Rule {
