@@ -1,4 +1,3 @@
-use std::fmt;
 use std::sync::Arc;
 
 use super::actions::Action;
@@ -6,23 +5,14 @@ use super::frame::Frame;
 use super::matchers::{ExceptionMatcher, FrameMatcher};
 use super::ExceptionData;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Rule(pub(crate) Arc<RuleInner>);
 
+#[derive(Debug, Clone)]
 pub struct RuleInner {
     pub frame_matchers: Vec<FrameMatcher>,
     pub exception_matchers: Vec<ExceptionMatcher>,
     pub actions: Vec<Action>,
-}
-
-impl fmt::Debug for Rule {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Rule")
-            .field("frame_matchers", &self.0.frame_matchers.len())
-            .field("exception_matchers", &self.0.exception_matchers.len())
-            .field("actions", &self.0.actions)
-            .finish()
-    }
 }
 
 impl Rule {
