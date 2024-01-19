@@ -51,6 +51,15 @@ pub struct Enhancements(enhancers::Enhancements);
 
 #[pymethods]
 impl Enhancements {
+    #[staticmethod]
+    fn empty() -> Self {
+        Self(enhancers::Enhancements::default())
+    }
+
+    fn extend_from(&mut self, other: &Self) {
+        self.0.extend_from(&other.0)
+    }
+
     #[new]
     fn new(input: &str, cache: &mut Cache) -> PyResult<Self> {
         let inner = enhancers::Enhancements::parse(input, &mut cache.0)?;
