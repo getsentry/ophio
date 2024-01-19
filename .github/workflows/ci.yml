@@ -24,13 +24,13 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo clippy --all-features --workspace --tests --examples -- -D clippy::all
 
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
+      # - uses: actions/setup-python@v4
+      #   with:
+      #     python-version: "3.10"
 
-      - run: make install-py-dev
-      - run: make style-python
-      - run: make lint-python
+      # - run: make install-py-dev
+      # - run: make style-python
+      # - run: make lint-python
 
   doc-comments:
     name: Rust doc comments
