@@ -2,7 +2,7 @@ use std::fmt;
 
 use smol_str::SmolStr;
 
-use super::{frame::Frame, Component, Rule};
+use super::{frame::Frame, Component, Rule, StacktraceState};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Range {
@@ -142,25 +142,6 @@ impl fmt::Display for FlagAction {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum VarName {
-    MinFrames,
-    MaxFrames,
-    Category,
-    InvertStacktrace,
-}
-
-impl fmt::Display for VarName {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            VarName::MinFrames => write!(f, "min-frames"),
-            VarName::MaxFrames => write!(f, "max-frames"),
-            VarName::Category => write!(f, "category"),
-            VarName::InvertStacktrace => write!(f, "invert-stacktrace"),
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VarAction {
     MinFrames(usize),
@@ -200,6 +181,7 @@ pub enum Action {
 }
 
 impl Action {
+    /// Returns true if this action modifies a stacktrace.
     pub fn is_modifier(&self) -> bool {
         matches!(
             self,
@@ -208,6 +190,10 @@ impl Action {
                 ..
             },) | Action::Var(VarAction::Category(_))
         )
+    }
+
+    pub fn is_updater(&self) -> bool {
+        !matches!(self, Action::Var(VarAction::Category(_)))
     }
 
     /// Applies this action's modification to the given list of frames at the given index.
@@ -233,10 +219,19 @@ impl Action {
     pub fn modify_stacktrace_state(&self, state: &mut StacktraceState, rule: Rule) {
         if let Self::Var(a) = self {
             match a {
-                VarAction::MinFrames(v) => todo!(),
-                VarAction::MaxFrames(v) => todo!(),
-                VarAction::Category(v) => todo!(),
-                VarAction::InvertStacktrace(v) => todo!(),
+                VarAction::Category(_) => (),
+                VarAction::MinFrames(v) => {
+                    state.min_frames.value = *v;
+                    state.min_frames.setter = Some(rule);
+                }
+                VarAction::MaxFrames(v) => {
+                    state.max_frames.value = *v;
+                    state.max_frames.setter = Some(rule);
+                }
+                VarAction::InvertStacktrace(v) => {
+                    state.invert_stacktrace.value = *v;
+                    state.invert_stacktrace.setter = Some(rule);
+                }
             }
         }
     }

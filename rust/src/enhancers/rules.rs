@@ -4,8 +4,9 @@ use std::sync::Arc;
 use super::actions::Action;
 use super::frame::Frame;
 use super::matchers::{ExceptionMatcher, FrameMatcher};
-use super::ExceptionData;
+use super::{Component, ExceptionData, StacktraceState};
 
+/// An enhancement rule, comprising exception matchers, frame matchers, and actions.
 #[derive(Debug, Clone)]
 pub struct Rule(pub(crate) Arc<RuleInner>);
 
@@ -35,6 +36,7 @@ impl fmt::Display for Rule {
 }
 
 impl Rule {
+    /// Checks whether an exception matches this rule.
     pub fn matches_exception(&self, exception_data: &ExceptionData) -> bool {
         self.0
             .exception_matchers
@@ -42,6 +44,7 @@ impl Rule {
             .all(|m| m.matches_exception(exception_data))
     }
 
+    /// Checks whether the frame at `frames[idx]` matches this rule.
     pub fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
         self.0
             .frame_matchers
@@ -49,13 +52,36 @@ impl Rule {
             .all(|m| m.matches_frame(frames, idx))
     }
 
+    /// Returns true if this rule contains any actions that may modify a stacktrace.
     pub fn has_modifier_action(&self) -> bool {
         self.0.actions.iter().any(|a| a.is_modifier())
     }
 
+    pub fn has_updater_action(&self) -> bool {
+        self.0.actions.iter().any(|a| a.is_updater())
+    }
+
+    pub fn modify_stacktrace_state(&self, state: &mut StacktraceState) {
+        for a in &self.0.actions {
+            a.modify_stacktrace_state(state, self.clone());
+        }
+    }
+
+    /// Applies all modifications from this rule's actions to matching frames.
     pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize) {
         for action in &self.0.actions {
             action.apply_modifications_to_frame(frames, idx)
+        }
+    }
+
+    pub fn update_frame_components_contributions(
+        &self,
+        components: &mut [Component],
+        frames: &[Frame],
+        idx: usize,
+    ) {
+        for action in &self.0.actions {
+            action.update_frame_components_contributions(components, frames, idx, self);
         }
     }
 }
