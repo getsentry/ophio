@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import Any, Mapping, Optional, Sequence, Union
 
 from sentry_ophio.enhancers import Enhancements, Cache
@@ -6,6 +5,7 @@ from sentry_ophio.enhancers import Enhancements, Cache
 # TODO: all this is copied from Sentry, and the Sentry side should still
 # be responsible for the `create_match_frame`
 PathSearchable = Union[Mapping[str, Any], Sequence[Any], None]
+
 
 def get_path(data: PathSearchable, *path, **kwargs):
     """
@@ -26,7 +26,11 @@ def get_path(data: PathSearchable, *path, **kwargs):
     for p in path:
         if isinstance(data, Mapping) and p in data:
             data = data[p]
-        elif isinstance(data, (list, tuple)) and isinstance(p, int) and -len(data) <= p < len(data):
+        elif (
+            isinstance(data, (list, tuple))
+            and isinstance(p, int)
+            and -len(data) <= p < len(data)
+        ):
             data = data[p]
         else:
             return default
@@ -35,7 +39,6 @@ def get_path(data: PathSearchable, *path, **kwargs):
         data = list(filter((lambda x: x is not None) if f is True else f, data))
 
     return data if data is not None else default
-
 
 
 def create_match_frame(frame_data: dict, platform: Optional[str]) -> dict:
@@ -66,8 +69,15 @@ def test_simple_enhancer():
     cache = Cache(1_000)
     enhancer = Enhancements("path:**/test.js              +app", cache)
 
-    frames = [create_match_frame({"abs_path": "http://example.com/foo/test.js", "filename": "/foo/test.js"}, "javascript")]
+    frames = [
+        create_match_frame(
+            {"abs_path": "http://example.com/foo/test.js", "filename": "/foo/test.js"},
+            "javascript",
+        )
+    ]
     exception_data = {"ty": None, "value": None, "mechanism": None}
 
-    modified_frames = enhancer.apply_modifications_to_frames(iter(frames), exception_data)
+    modified_frames = enhancer.apply_modifications_to_frames(
+        iter(frames), exception_data
+    )
     print(modified_frames)

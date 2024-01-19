@@ -1,0 +1,22 @@
+minVersion: "1.8.1"
+github:
+  owner: getsentry
+  repo: ophio
+changelogPolicy: auto
+
+statusProvider:
+  name: github
+artifactProvider:
+  name: github
+
+preReleaseCommand: bash scripts/bump-version
+targets:
+  - name: pypi
+  - name: sentry-pypi
+    internalPypiRepo: getsentry/pypi
+requireNames:
+  - /^sentry_ophio-.*-abi3-macosx_.*_x86_64.whl$/
+  - /^sentry_ophio-.*-abi3-macosx_.*_aarch64.whl$/
+  - /^sentry_ophio-.*-abi3-manylinux_.*_x86_64.whl$/
+  - /^sentry_ophio-.*-abi3-manylinux_.*_aarch64.whl$/
+  - /^sentry_ophio-.*.tar.gz$/
