@@ -66,7 +66,7 @@ impl fmt::Display for FlagAction {
             write!(f, "{range}")?;
         }
 
-        write!(f, "{}{}", self.flag, self.ty)
+        write!(f, "{}{}", if self.flag { "+" } else { "-" }, self.ty)
     }
 }
 
