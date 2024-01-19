@@ -72,10 +72,10 @@ impl FlagAction {
     pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize) {
         if self.ty == FlagActionType::App {
             for frame in self.slice_to_range_mut(frames, idx) {
-                let orig_in_app = frame.in_app;
-                if orig_in_app != self.flag {
+                let current_in_app = frame.in_app;
+                if current_in_app != self.flag {
                     frame.in_app = self.flag;
-                    frame.orig_in_app = Some(orig_in_app);
+                    frame.orig_in_app = frame.orig_in_app.or(Some(current_in_app));
                 }
             }
         }
