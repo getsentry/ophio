@@ -47,9 +47,11 @@ pub enum VarName {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct VarAction {
-    pub var: VarName,
-    pub value: SmolStr,
+pub enum VarAction {
+    MinFrames(usize),
+    MaxFrames(usize),
+    Category(SmolStr),
+    InvertStacktrace(bool),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -65,10 +67,7 @@ impl Action {
             Action::Flag(FlagAction {
                 ty: FlagActionType::App,
                 ..
-            },) | Action::Var(VarAction {
-                var: VarName::Category,
-                ..
-            })
+            },) | Action::Var(VarAction::Category(_))
         )
     }
 
@@ -84,10 +83,7 @@ impl Action {
                     frame.in_app = action.flag;
                 }
             }
-            Action::Var(VarAction {
-                var: VarName::Category,
-                value,
-            }) => {
+            Action::Var(VarAction::Category(value)) => {
                 if let Some(frame) = frames.get_mut(idx) {
                     frame.category = Some(value.clone())
                 }

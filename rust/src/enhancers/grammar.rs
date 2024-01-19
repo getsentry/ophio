@@ -14,13 +14,27 @@ use nom::combinator::{all_consuming, map, map_res, opt, value};
 use nom::multi::{many0, many1};
 use nom::sequence::{delimited, preceded, tuple};
 use nom::{Finish, IResult, Parser};
+use smol_str::SmolStr;
 
-use crate::enhancers::actions::{Action, FlagAction, FlagActionType, Range, VarAction, VarName};
+use crate::enhancers::actions::{Action, FlagAction, FlagActionType, Range, VarAction};
 use crate::enhancers::matchers::{FrameOffset, Matcher};
 use crate::enhancers::rules::{Rule, RuleInner};
 
 fn ident(input: &str) -> IResult<&str, &str> {
     take_while1(|c: char| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-'))(input)
+}
+
+fn rule_bool(input: &str) -> IResult<&str, bool> {
+    alt((
+        value(true, alt((tag("1"), tag("yes"), tag("true")))),
+        value(false, alt((tag("0"), tag("no"), tag("false")))),
+    ))(input)
+}
+
+fn rule_number(input: &str) -> IResult<&str, usize> {
+    map(take_while1(|c: char| c.is_ascii_digit()), |n: &str| {
+        n.parse().unwrap()
+    })(input)
 }
 
 fn frame_matcher(frame_offset: FrameOffset) -> impl Fn(&str) -> IResult<&str, Matcher> {
@@ -96,19 +110,28 @@ fn matchers(input: &str) -> IResult<&str, Vec<Matcher>> {
 }
 
 fn actions(input: &str) -> IResult<&str, Vec<Action>> {
-    let var_name = alt((
-        value(VarName::MaxFrames, tag("max-frames")),
-        value(VarName::MinFrames, tag("min-frames")),
-        value(VarName::InvertStacktrace, tag("invert-stacktrace")),
-        value(VarName::Category, tag("category")),
-    ));
-    let var_action =
-        tuple((var_name, space0, char('='), space0, ident)).map(|(var_name, _, _, _, ident)| {
-            VarAction {
-                var: var_name,
-                value: ident.into(),
-            }
-        });
+    let max_frames = preceded(
+        tuple((tag("max-frames"), space0, char('='), space0)),
+        rule_number,
+    )
+    .map(VarAction::MaxFrames);
+
+    let min_frames = preceded(
+        tuple((tag("min-frames"), space0, char('='), space0)),
+        rule_number,
+    )
+    .map(VarAction::MinFrames);
+
+    let invert_stacktrace = preceded(
+        tuple((tag("invert-stacktrace"), space0, char('='), space0)),
+        rule_bool,
+    )
+    .map(VarAction::InvertStacktrace);
+
+    let category = preceded(tuple((tag("category"), space0, char('='), space0)), ident)
+        .map(|c| VarAction::Category(SmolStr::new(c)));
+
+    let var_action = alt((max_frames, min_frames, invert_stacktrace, category));
 
     let flag_name = alt((
         value(FlagActionType::Group, tag("group")),
