@@ -6,22 +6,22 @@ use super::actions::{Action, FlagAction, FlagActionType, Range, VarAction};
 use super::matchers::{FrameOffset, Matcher};
 
 #[derive(Debug, Deserialize)]
-pub struct EnhancementsStructure<'a>(
+pub struct EncodedEnhancements<'a>(
     pub usize,
     pub Vec<SmolStr>,
-    #[serde(borrow)] pub Vec<RuleStructure<'a>>,
+    #[serde(borrow)] pub Vec<EncodedRule<'a>>,
 );
 
 #[derive(Debug, Deserialize)]
-pub struct RuleStructure<'a>(
-    #[serde(borrow)] pub Vec<MatchStructure<'a>>,
-    #[serde(borrow)] pub Vec<ActionStructure<'a>>,
+pub struct EncodedRule<'a>(
+    #[serde(borrow)] pub Vec<EncodedMatcher<'a>>,
+    #[serde(borrow)] pub Vec<EncodedAction<'a>>,
 );
 
 #[derive(Debug, Deserialize)]
-pub struct MatchStructure<'a>(pub &'a str);
+pub struct EncodedMatcher<'a>(pub &'a str);
 
-impl<'a> MatchStructure<'a> {
+impl<'a> EncodedMatcher<'a> {
     pub fn into_matcher(self) -> anyhow::Result<Matcher> {
         let mut def = self.0;
         let mut frame_offset = FrameOffset::None;
@@ -44,6 +44,7 @@ impl<'a> MatchStructure<'a> {
         let (key, arg) = match def.split_at(1) {
             ("p", arg) => ("path", arg),
             ("f", arg) => ("function", arg),
+            ("m", arg) => ("module", arg),
             ("F", arg) => {
                 use std::fmt::Write;
                 for f in arg.chars() {
@@ -81,17 +82,17 @@ pub enum VarActionValue {
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
-pub enum ActionStructure<'a> {
+pub enum EncodedAction<'a> {
     FlagAction(usize),
     #[serde(borrow)]
     VarAction((&'a str, VarActionValue)),
 }
 
-impl<'a> ActionStructure<'a> {
+impl<'a> EncodedAction<'a> {
     pub fn into_action(self) -> anyhow::Result<Action> {
         use VarActionValue::*;
         Ok(match self {
-            ActionStructure::FlagAction(flag) => {
+            EncodedAction::FlagAction(flag) => {
                 const ACTIONS: &[FlagActionType] = &[
                     FlagActionType::Group,
                     FlagActionType::App,
@@ -120,16 +121,16 @@ impl<'a> ActionStructure<'a> {
                     .with_context(|| format!("Failed to convert encoded FlagAction: `{flag}`"))?;
                 Action::Flag(FlagAction { flag, ty, range })
             }
-            ActionStructure::VarAction(("min-frames", Int(value))) => {
+            EncodedAction::VarAction(("min-frames", Int(value))) => {
                 Action::Var(VarAction::MinFrames(value))
             }
-            ActionStructure::VarAction(("max-frames", Int(value))) => {
+            EncodedAction::VarAction(("max-frames", Int(value))) => {
                 Action::Var(VarAction::MaxFrames(value))
             }
-            ActionStructure::VarAction(("invert-stacktrace", Bool(value))) => {
+            EncodedAction::VarAction(("invert-stacktrace", Bool(value))) => {
                 Action::Var(VarAction::InvertStacktrace(value))
             }
-            ActionStructure::VarAction(("category", Str(value))) => {
+            EncodedAction::VarAction(("category", Str(value))) => {
                 Action::Var(VarAction::Category(value.clone()))
             }
             _ => anyhow::bail!("Failed to convert encoded Action: `{:?}`", self),

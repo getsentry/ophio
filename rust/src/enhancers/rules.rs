@@ -49,7 +49,7 @@ impl fmt::Display for Rule {
 }
 
 impl Rule {
-    pub fn new(matchers: Vec<Matcher>, actions: Vec<Action>) -> Self {
+    pub(crate) fn new(matchers: Vec<Matcher>, actions: Vec<Action>) -> Self {
         let (mut frame_matchers, mut exception_matchers) = (Vec::new(), Vec::new());
 
         for m in matchers {

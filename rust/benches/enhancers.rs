@@ -14,16 +14,16 @@ fn main() {
     divan::main();
 }
 
-fn read_fixture(name: &str) -> String {
+fn read_fixture(name: &str) -> Vec<u8> {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../tests/fixtures")
         .join(name);
-    std::fs::read_to_string(path).unwrap()
+    std::fs::read(path).unwrap()
 }
 
 #[divan::bench]
 fn parse_enhancers(bencher: Bencher) {
-    let enhancers = read_fixture("newstyle@2023-01-11.txt");
+    let enhancers = String::from_utf8(read_fixture("newstyle@2023-01-11.txt")).unwrap();
     bencher.bench(|| {
         black_box(Enhancements::parse(&enhancers, &mut Cache::default()).unwrap());
     })
@@ -31,7 +31,7 @@ fn parse_enhancers(bencher: Bencher) {
 
 #[divan::bench]
 fn parse_enhancers_cached(bencher: Bencher) {
-    let enhancers = read_fixture("newstyle@2023-01-11.txt");
+    let enhancers = String::from_utf8(read_fixture("newstyle@2023-01-11.txt")).unwrap();
     let mut cache = Cache::new(1_000);
     bencher.bench_local(|| {
         black_box(Enhancements::parse(&enhancers, &mut cache).unwrap());
@@ -39,14 +39,22 @@ fn parse_enhancers_cached(bencher: Bencher) {
 }
 
 #[divan::bench]
+fn parse_encoded_enhancers(bencher: Bencher) {
+    let enhancers = read_fixture("newstyle@2023-01-11.bin");
+    bencher.bench(|| {
+        black_box(Enhancements::from_config_structure(&enhancers).unwrap());
+    })
+}
+
+#[divan::bench]
 fn apply_modifications(bencher: Bencher) {
-    let enhancers = read_fixture("newstyle@2023-01-11.txt");
+    let enhancers = String::from_utf8(read_fixture("newstyle@2023-01-11.txt")).unwrap();
     let enhancers = Enhancements::parse(&enhancers, &mut Cache::default()).unwrap();
 
     let platform = "cocoa";
 
     let stacktraces = read_fixture("cocoa-stacktraces.json");
-    let stacktraces: serde_json::Value = serde_json::from_str(&stacktraces).unwrap();
+    let stacktraces: serde_json::Value = serde_json::from_slice(&stacktraces).unwrap();
     let mut stacktraces: Vec<_> = stacktraces
         .as_array()
         .unwrap()

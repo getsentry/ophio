@@ -8,9 +8,9 @@ mod grammar;
 mod matchers;
 mod rules;
 
-use crate::enhancers::config_structure::{ActionStructure, MatchStructure};
+use crate::enhancers::config_structure::{EncodedAction, EncodedMatcher};
 
-use self::config_structure::EnhancementsStructure;
+use self::config_structure::EncodedEnhancements;
 pub use self::frame::{Frame, StringField};
 pub use self::rules::Rule;
 pub use cache::*;
@@ -66,7 +66,7 @@ impl Enhancements {
     }
 
     pub fn from_config_structure(input: &[u8]) -> anyhow::Result<Self> {
-        let EnhancementsStructure(version, _bases, rules) = rmp_serde::from_slice(input)?;
+        let EncodedEnhancements(version, _bases, rules) = rmp_serde::from_slice(input)?;
 
         anyhow::ensure!(
             version == 2,
@@ -78,11 +78,11 @@ impl Enhancements {
             .map(|r| {
                 let matchers =
                     r.0.into_iter()
-                        .map(MatchStructure::into_matcher)
+                        .map(EncodedMatcher::into_matcher)
                         .collect::<anyhow::Result<_>>()?;
                 let actions =
                     r.1.into_iter()
-                        .map(ActionStructure::into_action)
+                        .map(EncodedAction::into_action)
                         .collect::<anyhow::Result<_>>()?;
 
                 Ok(Rule::new(matchers, actions))
@@ -232,5 +232,11 @@ mod tests {
         dbg!(enhancements.all_rules.len());
         dbg!(enhancements.modifier_rules.len());
         dbg!(enhancements.updater_rules.len());
+    }
+
+    #[test]
+    fn parses_encoded_default_enhancers() {
+        let enhancers = std::fs::read("../tests/fixtures/newstyle@2023-01-11.bin").unwrap();
+        let _enhancements = Enhancements::from_config_structure(&enhancers).unwrap();
     }
 }
