@@ -62,7 +62,7 @@ fn frame_matcher(frame_offset: FrameOffset) -> impl Fn(&str) -> IResult<&str, Ma
                 Matcher::new(
                     negated.is_some(),
                     matcher_type,
-                    argument,
+                    &unescaped,
                     frame_offset,
                     &mut Cache::default(),
                 )
