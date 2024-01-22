@@ -518,4 +518,13 @@ mod tests {
             "native"
         )));
     }
+
+    #[test]
+    fn test_dtor() {
+        let matcher = create_matcher(r#"family:native function:"*::\\{dtor\\}" category=dtor"#);
+        assert!(matcher(Frame::from_test(
+            &json!({"function": "abccore::classref::InterfaceRef<T>::{dtor}"}),
+            "native"
+        )));
+    }
 }

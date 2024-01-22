@@ -57,6 +57,8 @@ fn frame_matcher(frame_offset: FrameOffset) -> impl Fn(&str) -> IResult<&str, Ma
         let mut matcher = map_res(
             tuple((opt(char('!')), matcher_type, char(':'), argument)),
             |(negated, matcher_type, _, argument): (_, _, _, &str)| {
+                // TODO: support even more escapes
+                let unescaped = argument.replace("\\\\", "\\");
                 Matcher::new(
                     negated.is_some(),
                     matcher_type,
