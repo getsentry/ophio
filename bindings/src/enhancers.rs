@@ -41,8 +41,8 @@ pub struct Cache(enhancers::Cache);
 #[pymethods]
 impl Cache {
     #[new]
-    fn new(rules_size: usize, regex_size: usize) -> PyResult<Self> {
-        Ok(Self(enhancers::Cache::new(rules_size, regex_size)))
+    fn new(size: usize) -> PyResult<Self> {
+        Ok(Self(enhancers::Cache::new(size)))
     }
 }
 

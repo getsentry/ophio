@@ -14,9 +14,9 @@ impl Cache {
     /// Creates a new cache with the given size.
     ///
     /// If `size` is 0, no caching will be performed.
-    pub fn new(rules_size: usize, regex_size: usize) -> Self {
-        let rules = rules_size.try_into().ok().map(LruCache::new);
-        let regex = regex_size.try_into().ok().map(LruCache::new);
+    pub fn new(size: usize) -> Self {
+        let rules = size.try_into().ok().map(LruCache::new);
+        let regex = size.try_into().ok().map(LruCache::new);
         Self { rules, regex }
     }
 
