@@ -42,7 +42,16 @@ fn parse_enhancers_cached(bencher: Bencher) {
 fn parse_encoded_enhancers(bencher: Bencher) {
     let enhancers = read_fixture("newstyle@2023-01-11.bin");
     bencher.bench(|| {
-        black_box(Enhancements::from_config_structure(&enhancers).unwrap());
+        black_box(Enhancements::from_config_structure(&enhancers, &mut Cache::default()).unwrap());
+    })
+}
+
+#[divan::bench]
+fn parse_encoded_enhancers_cached(bencher: Bencher) {
+    let enhancers = read_fixture("newstyle@2023-01-11.bin");
+    let mut cache = Cache::new(1_000);
+    bencher.bench_local(|| {
+        black_box(Enhancements::from_config_structure(&enhancers, &mut cache).unwrap());
     })
 }
 

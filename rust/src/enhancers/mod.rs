@@ -65,7 +65,7 @@ impl Enhancements {
         Ok(Enhancements::new(all_rules))
     }
 
-    pub fn from_config_structure(input: &[u8]) -> anyhow::Result<Self> {
+    pub fn from_config_structure(input: &[u8], _cache: &mut Cache) -> anyhow::Result<Self> {
         let EncodedEnhancements(version, _bases, rules) = rmp_serde::from_slice(input)?;
 
         anyhow::ensure!(
@@ -237,6 +237,7 @@ mod tests {
     #[test]
     fn parses_encoded_default_enhancers() {
         let enhancers = std::fs::read("../tests/fixtures/newstyle@2023-01-11.bin").unwrap();
-        let _enhancements = Enhancements::from_config_structure(&enhancers).unwrap();
+        let _enhancements =
+            Enhancements::from_config_structure(&enhancers, &mut Cache::default()).unwrap();
     }
 }
