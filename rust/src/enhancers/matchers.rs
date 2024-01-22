@@ -1,4 +1,5 @@
 use std::fmt;
+use std::sync::Arc;
 
 use globset::GlobBuilder;
 use regex::bytes::{Regex, RegexBuilder};
@@ -180,7 +181,7 @@ enum FrameMatcherInner {
     Field {
         field: FrameField,
         path_like: bool,
-        pattern: Regex,
+        pattern: Arc<Regex>,
     },
     /// Checks whether a frame's family is one of the allowed families.
     Family { native: bool, javascript: bool },
