@@ -18,7 +18,7 @@ pub struct ExceptionData {
     pub mechanism: Option<SmolStr>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Enhancements {
     pub(crate) all_rules: Vec<Rule>,
     modifier_rules: Vec<Rule>,
