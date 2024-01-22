@@ -2,11 +2,15 @@ use smol_str::SmolStr;
 
 mod actions;
 mod cache;
+mod config_structure;
 mod frame;
 mod grammar;
 mod matchers;
 mod rules;
 
+use crate::enhancers::config_structure::{EncodedAction, EncodedMatcher};
+
+use self::config_structure::EncodedEnhancements;
 pub use self::frame::{Frame, StringField};
 pub use self::rules::Rule;
 pub use cache::*;
@@ -26,18 +30,7 @@ pub struct Enhancements {
 }
 
 impl Enhancements {
-    pub fn parse(input: &str, cache: &mut Cache) -> anyhow::Result<Self> {
-        let mut all_rules = vec![];
-
-        for line in input.lines() {
-            let line = line.trim();
-            if line.is_empty() || line.starts_with('#') {
-                continue;
-            }
-            let rule = cache.get_or_try_insert(line, grammar::parse_rule)?;
-            all_rules.push(rule);
-        }
-
+    pub fn new(all_rules: Vec<Rule>) -> Self {
         let modifier_rules = all_rules
             .iter()
             .filter(|r| r.has_modifier_action())
@@ -50,11 +43,53 @@ impl Enhancements {
             .cloned()
             .collect();
 
-        Ok(Enhancements {
+        Enhancements {
             all_rules,
             modifier_rules,
             updater_rules,
-        })
+        }
+    }
+
+    pub fn parse(input: &str, cache: &mut Cache) -> anyhow::Result<Self> {
+        let mut all_rules = vec![];
+
+        for line in input.lines() {
+            let line = line.trim();
+            if line.is_empty() || line.starts_with('#') {
+                continue;
+            }
+            let rule = cache.get_or_try_insert_rule(line, grammar::parse_rule)?;
+            all_rules.push(rule);
+        }
+
+        Ok(Enhancements::new(all_rules))
+    }
+
+    pub fn from_config_structure(input: &[u8], cache: &mut Cache) -> anyhow::Result<Self> {
+        let EncodedEnhancements(version, _bases, rules) = rmp_serde::from_slice(input)?;
+
+        anyhow::ensure!(
+            version == 2,
+            "Rust Enhancements only supports config_structure version `2`"
+        );
+
+        let all_rules: Vec<_> = rules
+            .into_iter()
+            .map(|r| {
+                let matchers =
+                    r.0.into_iter()
+                        .map(|encoded| EncodedMatcher::into_matcher(encoded, cache))
+                        .collect::<anyhow::Result<_>>()?;
+                let actions =
+                    r.1.into_iter()
+                        .map(EncodedAction::into_action)
+                        .collect::<anyhow::Result<_>>()?;
+
+                Ok(Rule::new(matchers, actions))
+            })
+            .collect::<anyhow::Result<_>>()?;
+
+        Ok(Enhancements::new(all_rules))
     }
 
     pub fn apply_modifications_to_frames(
@@ -193,6 +228,16 @@ mod tests {
     fn parses_default_enhancers() {
         let enhancers =
             std::fs::read_to_string("../tests/fixtures/newstyle@2023-01-11.txt").unwrap();
-        Enhancements::parse(&enhancers, &mut Cache::default()).unwrap();
+        let enhancements = Enhancements::parse(&enhancers, &mut Cache::default()).unwrap();
+        dbg!(enhancements.all_rules.len());
+        dbg!(enhancements.modifier_rules.len());
+        dbg!(enhancements.updater_rules.len());
+    }
+
+    #[test]
+    fn parses_encoded_default_enhancers() {
+        let enhancers = std::fs::read("../tests/fixtures/newstyle@2023-01-11.bin").unwrap();
+        let _enhancements =
+            Enhancements::from_config_structure(&enhancers, &mut Cache::default()).unwrap();
     }
 }
