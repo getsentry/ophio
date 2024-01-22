@@ -2,4 +2,5 @@
 .venv/
 .pytest_cache/
 *.py[cod]
+*.so
 dist/
