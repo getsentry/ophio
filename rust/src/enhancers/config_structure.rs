@@ -2,9 +2,7 @@ use anyhow::Context;
 use serde::Deserialize;
 use smol_str::SmolStr;
 
-use crate::enhancers::actions::{FlagAction, FlagActionType, Range, VarAction};
-
-use super::actions::Action;
+use super::actions::{Action, FlagAction, FlagActionType, Range, VarAction};
 use super::matchers::{FrameOffset, Matcher};
 
 #[derive(Debug, Deserialize)]
@@ -13,10 +11,20 @@ struct RuleStructure<'a>(
     #[serde(borrow)] Vec<ActionStructure<'a>>,
 );
 
+impl<'a> RuleStructure<'a> {
+    fn from_msgpack_slice(slice: &'a [u8]) -> anyhow::Result<Self> {
+        Ok(rmp_serde::from_slice(slice)?)
+    }
+}
+
 #[derive(Debug, Deserialize)]
 struct MatchStructure<'a>(&'a str);
 
-impl MatchStructure<'_> {
+impl<'a> MatchStructure<'a> {
+    fn from_msgpack_slice(slice: &'a [u8]) -> anyhow::Result<Self> {
+        Ok(rmp_serde::from_slice(slice)?)
+    }
+
     fn into_matcher(self) -> anyhow::Result<Matcher> {
         let mut def = self.0;
         let mut frame_offset = FrameOffset::None;
@@ -107,7 +115,11 @@ enum ActionStructure<'a> {
         */
 }
 
-impl ActionStructure<'_> {
+impl<'a> ActionStructure<'a> {
+    fn from_msgpack_slice(slice: &'a [u8]) -> anyhow::Result<Self> {
+        Ok(rmp_serde::from_slice(slice)?)
+    }
+
     fn into_action(self) -> anyhow::Result<Action> {
         use VarActionValue::*;
         Ok(match self {
