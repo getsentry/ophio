@@ -67,7 +67,7 @@ def create_match_frame(frame_data: dict, platform: Optional[str]) -> dict:
 
 def test_simple_enhancer():
     cache = Cache(1_000)
-    enhancer = Enhancements("path:**/test.js              +app", cache)
+    enhancer = Enhancements.parse("path:**/test.js              +app", cache)
 
     frames = [
         create_match_frame(
