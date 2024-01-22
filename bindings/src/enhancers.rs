@@ -56,14 +56,20 @@ impl Enhancements {
         Self(enhancers::Enhancements::default())
     }
 
-    fn extend_from(&mut self, other: &Self) {
-        self.0.extend_from(&other.0)
-    }
-
     #[new]
     fn new(input: &str, cache: &mut Cache) -> PyResult<Self> {
         let inner = enhancers::Enhancements::parse(input, &mut cache.0)?;
         Ok(Self(inner))
+    }
+
+    #[staticmethod]
+    fn from_config_structure(input: &[u8], cache: &mut Cache) -> PyResult<Self> {
+        let inner = enhancers::Enhancements::from_config_structure(input, &mut cache.0)?;
+        Ok(Self(inner))
+    }
+
+    fn extend_from(&mut self, other: &Self) {
+        self.0.extend_from(&other.0)
     }
 
     fn apply_modifications_to_frames(
