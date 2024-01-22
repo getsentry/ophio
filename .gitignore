@@ -1,5 +1,6 @@
 /target
 .venv/
+.mypy_cache/
 .pytest_cache/
 *.py[cod]
 *.so
