@@ -42,6 +42,8 @@ impl Cache {
         }
     }
 
+    /// Gets the regex for the string `key` from the cache or computes and inserts
+    /// it using `f` if it is not present.
     pub fn get_or_try_insert_regex<F>(&mut self, key: &str, f: F) -> anyhow::Result<Arc<Regex>>
     where
         F: Fn(&str) -> anyhow::Result<Regex>,
