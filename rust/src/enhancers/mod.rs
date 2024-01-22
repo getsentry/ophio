@@ -62,15 +62,19 @@ impl Enhancements {
         frames: &mut [Frame],
         exception_data: &ExceptionData,
     ) {
+        let mut matching_frames = Vec::with_capacity(frames.len());
         for rule in &self.modifier_rules {
             if !rule.matches_exception(exception_data) {
                 continue;
             }
 
-            for idx in 0..frames.len() {
-                if rule.matches_frame(frames, idx) {
-                    rule.apply_modifications_to_frame(frames, idx);
-                }
+            // first, for each frame check if the rule matches
+            matching_frames
+                .extend((0..frames.len()).filter(|idx| rule.matches_frame(frames, *idx)));
+
+            // then in a second pass, apply the actions to all matching frames
+            for idx in matching_frames.drain(..) {
+                rule.apply_modifications_to_frame(frames, idx);
             }
         }
     }
