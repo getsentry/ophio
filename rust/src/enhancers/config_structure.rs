@@ -4,6 +4,7 @@ use smol_str::SmolStr;
 
 use super::actions::{Action, FlagAction, FlagActionType, Range, VarAction};
 use super::matchers::{FrameOffset, Matcher};
+use super::Cache;
 
 #[derive(Debug, Deserialize)]
 pub struct EncodedEnhancements<'a>(
@@ -22,7 +23,7 @@ pub struct EncodedRule<'a>(
 pub struct EncodedMatcher<'a>(pub &'a str);
 
 impl<'a> EncodedMatcher<'a> {
-    pub fn into_matcher(self) -> anyhow::Result<Matcher> {
+    pub fn into_matcher(self, cache: &mut Cache) -> anyhow::Result<Matcher> {
         let mut def = self.0;
         let mut frame_offset = FrameOffset::None;
 
@@ -68,7 +69,7 @@ impl<'a> EncodedMatcher<'a> {
             }
         };
 
-        Matcher::new(negated, key, arg, frame_offset)
+        Matcher::new(negated, key, arg, frame_offset, cache)
     }
 }
 

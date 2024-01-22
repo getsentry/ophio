@@ -17,6 +17,7 @@ use smol_str::SmolStr;
 use super::actions::{Action, FlagAction, FlagActionType, Range, VarAction};
 use super::matchers::{FrameOffset, Matcher};
 use super::rules::Rule;
+use super::Cache;
 
 fn ident(input: &str) -> IResult<&str, &str> {
     take_while1(|c: char| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-'))(input)
@@ -56,7 +57,13 @@ fn frame_matcher(frame_offset: FrameOffset) -> impl Fn(&str) -> IResult<&str, Ma
         let mut matcher = map_res(
             tuple((opt(char('!')), matcher_type, char(':'), argument)),
             |(negated, matcher_type, _, argument): (_, _, _, &str)| {
-                Matcher::new(negated.is_some(), matcher_type, argument, frame_offset)
+                Matcher::new(
+                    negated.is_some(),
+                    matcher_type,
+                    argument,
+                    frame_offset,
+                    &mut Cache::default(),
+                )
             },
         );
 

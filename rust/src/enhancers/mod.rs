@@ -58,14 +58,14 @@ impl Enhancements {
             if line.is_empty() || line.starts_with('#') {
                 continue;
             }
-            let rule = cache.get_or_try_insert(line, grammar::parse_rule)?;
+            let rule = cache.get_or_try_insert_rule(line, grammar::parse_rule)?;
             all_rules.push(rule);
         }
 
         Ok(Enhancements::new(all_rules))
     }
 
-    pub fn from_config_structure(input: &[u8], _cache: &mut Cache) -> anyhow::Result<Self> {
+    pub fn from_config_structure(input: &[u8], cache: &mut Cache) -> anyhow::Result<Self> {
         let EncodedEnhancements(version, _bases, rules) = rmp_serde::from_slice(input)?;
 
         anyhow::ensure!(
@@ -78,7 +78,7 @@ impl Enhancements {
             .map(|r| {
                 let matchers =
                     r.0.into_iter()
-                        .map(EncodedMatcher::into_matcher)
+                        .map(|encoded| EncodedMatcher::into_matcher(encoded, cache))
                         .collect::<anyhow::Result<_>>()?;
                 let actions =
                     r.1.into_iter()

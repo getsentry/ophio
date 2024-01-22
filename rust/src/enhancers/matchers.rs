@@ -5,7 +5,7 @@ use regex::bytes::{Regex, RegexBuilder};
 use smol_str::SmolStr;
 
 use super::frame::{Frame, FrameField, StringField};
-use super::ExceptionData;
+use super::{Cache, ExceptionData};
 
 /// Enum that wraps a frame or exception matcher.
 ///
@@ -36,25 +36,26 @@ impl Matcher {
         matcher_type: &str,
         argument: &str,
         frame_offset: FrameOffset,
+        cache: &mut Cache,
     ) -> anyhow::Result<Self> {
         match matcher_type {
             // Field matchers
             "stack.module" | "module" => Ok(Self::new_frame(
                 negated,
                 frame_offset,
-                FrameMatcherInner::new_field(FrameField::Module, false, argument)?,
+                FrameMatcherInner::new_field(FrameField::Module, false, argument, cache)?,
                 argument,
             )),
             "stack.function" | "function" => Ok(Self::new_frame(
                 negated,
                 frame_offset,
-                FrameMatcherInner::new_field(FrameField::Function, false, argument)?,
+                FrameMatcherInner::new_field(FrameField::Function, false, argument, cache)?,
                 argument,
             )),
             "category" => Ok(Self::new_frame(
                 negated,
                 frame_offset,
-                FrameMatcherInner::new_field(FrameField::Category, false, argument)?,
+                FrameMatcherInner::new_field(FrameField::Category, false, argument, cache)?,
                 argument,
             )),
 
@@ -62,13 +63,13 @@ impl Matcher {
             "stack.abs_path" | "path" => Ok(Self::new_frame(
                 negated,
                 frame_offset,
-                FrameMatcherInner::new_field(FrameField::Path, true, argument)?,
+                FrameMatcherInner::new_field(FrameField::Path, true, argument, cache)?,
                 argument,
             )),
             "stack.package" | "package" => Ok(Self::new_frame(
                 negated,
                 frame_offset,
-                FrameMatcherInner::new_field(FrameField::Package, true, argument)?,
+                FrameMatcherInner::new_field(FrameField::Package, true, argument, cache)?,
                 argument,
             )),
 
@@ -192,8 +193,14 @@ enum FrameMatcherInner {
 }
 
 impl FrameMatcherInner {
-    fn new_field(field: FrameField, path_like: bool, pattern: &str) -> anyhow::Result<Self> {
-        let pattern = translate_pattern(pattern, path_like)?;
+    fn new_field(
+        field: FrameField,
+        path_like: bool,
+        pattern: &str,
+        cache: &mut Cache,
+    ) -> anyhow::Result<Self> {
+        let pattern =
+            cache.get_or_try_insert_regex(pattern, |pat| translate_pattern(pat, path_like))?;
         Ok(Self::Field {
             field,
             path_like,
