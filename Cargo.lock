@@ -731,6 +731,7 @@ dependencies = [
  "lru",
  "nom",
  "regex",
+ "serde",
  "serde_json",
  "smol_str",
 ]

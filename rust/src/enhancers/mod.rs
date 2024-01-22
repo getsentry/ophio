@@ -2,6 +2,7 @@ use smol_str::SmolStr;
 
 mod actions;
 mod cache;
+mod config_structure;
 mod frame;
 mod grammar;
 mod matchers;
