@@ -5,8 +5,6 @@
 // - we should probably support better Error handling
 // - quoted identifiers/arguments should properly support escapes, etc
 
-use std::sync::Arc;
-
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while1};
 use nom::character::complete::{anychar, char, space0};
@@ -16,9 +14,9 @@ use nom::sequence::{delimited, preceded, tuple};
 use nom::{Finish, IResult, Parser};
 use smol_str::SmolStr;
 
-use crate::enhancers::actions::{Action, FlagAction, FlagActionType, Range, VarAction};
-use crate::enhancers::matchers::{FrameOffset, Matcher};
-use crate::enhancers::rules::{Rule, RuleInner};
+use super::actions::{Action, FlagAction, FlagActionType, Range, VarAction};
+use super::matchers::{FrameOffset, Matcher};
+use super::rules::Rule;
 
 fn ident(input: &str) -> IResult<&str, &str> {
     take_while1(|c: char| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-'))(input)
@@ -164,18 +162,5 @@ pub fn parse_rule(input: &str) -> anyhow::Result<Rule> {
             .finish()
             .map_err(|e| anyhow::Error::msg(e.to_string()))?;
 
-    let (mut frame_matchers, mut exception_matchers) = (Vec::new(), Vec::new());
-
-    for m in matchers {
-        match m {
-            Matcher::Frame(m) => frame_matchers.push(m),
-            Matcher::Exception(m) => exception_matchers.push(m),
-        }
-    }
-
-    Ok(Rule(Arc::new(RuleInner {
-        frame_matchers,
-        exception_matchers,
-        actions,
-    })))
+    Ok(Rule::new(matchers, actions))
 }

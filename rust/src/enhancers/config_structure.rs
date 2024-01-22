@@ -6,26 +6,23 @@ use super::actions::{Action, FlagAction, FlagActionType, Range, VarAction};
 use super::matchers::{FrameOffset, Matcher};
 
 #[derive(Debug, Deserialize)]
-struct RuleStructure<'a>(
-    #[serde(borrow)] Vec<MatchStructure<'a>>,
-    #[serde(borrow)] Vec<ActionStructure<'a>>,
+pub struct EnhancementsStructure<'a>(
+    pub usize,
+    pub Vec<SmolStr>,
+    #[serde(borrow)] pub Vec<RuleStructure<'a>>,
 );
 
-impl<'a> RuleStructure<'a> {
-    fn from_msgpack_slice(slice: &'a [u8]) -> anyhow::Result<Self> {
-        Ok(rmp_serde::from_slice(slice)?)
-    }
-}
+#[derive(Debug, Deserialize)]
+pub struct RuleStructure<'a>(
+    #[serde(borrow)] pub Vec<MatchStructure<'a>>,
+    #[serde(borrow)] pub Vec<ActionStructure<'a>>,
+);
 
 #[derive(Debug, Deserialize)]
-struct MatchStructure<'a>(&'a str);
+pub struct MatchStructure<'a>(pub &'a str);
 
 impl<'a> MatchStructure<'a> {
-    fn from_msgpack_slice(slice: &'a [u8]) -> anyhow::Result<Self> {
-        Ok(rmp_serde::from_slice(slice)?)
-    }
-
-    fn into_matcher(self) -> anyhow::Result<Matcher> {
+    pub fn into_matcher(self) -> anyhow::Result<Matcher> {
         let mut def = self.0;
         let mut frame_offset = FrameOffset::None;
 
@@ -76,7 +73,7 @@ impl<'a> MatchStructure<'a> {
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
-enum VarActionValue {
+pub enum VarActionValue {
     Int(usize),
     Bool(bool),
     Str(SmolStr),
@@ -84,43 +81,14 @@ enum VarActionValue {
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
-enum ActionStructure<'a> {
+pub enum ActionStructure<'a> {
     FlagAction(usize),
     #[serde(borrow)]
     VarAction((&'a str, VarActionValue)),
-    /*
-    ACTIONS = ["group", "app", "prefix", "sentinel"]
-    ACTION_BITSIZE = {
-        # version -> bit-size
-        1: 4,
-        2: 8,
-    }
-    assert len(ACTIONS) < 1 << max(ACTION_BITSIZE.values())
-    ACTION_FLAGS = {
-        (True, None): 0,
-        (True, "up"): 1,
-        (True, "down"): 2,
-        (False, None): 3,
-        (False, "up"): 4,
-        (False, "down"): 5,
-    }
-    REVERSE_ACTION_FLAGS = {v: k for k, v in ACTION_FLAGS.items()}
-
-        @classmethod
-        def _from_config_structure(cls, val, version: int):
-            if isinstance(val, list):
-                return VarAction(val[0], val[1])
-            flag, range = REVERSE_ACTION_FLAGS[val >> ACTION_BITSIZE[version]]
-            return FlagAction(ACTIONS[val & 0xF], flag, range)
-        */
 }
 
 impl<'a> ActionStructure<'a> {
-    fn from_msgpack_slice(slice: &'a [u8]) -> anyhow::Result<Self> {
-        Ok(rmp_serde::from_slice(slice)?)
-    }
-
-    fn into_action(self) -> anyhow::Result<Action> {
+    pub fn into_action(self) -> anyhow::Result<Action> {
         use VarActionValue::*;
         Ok(match self {
             ActionStructure::FlagAction(flag) => {

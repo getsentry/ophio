@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use super::actions::Action;
 use super::frame::Frame;
-use super::matchers::{ExceptionMatcher, FrameMatcher};
+use super::matchers::{ExceptionMatcher, FrameMatcher, Matcher};
 use super::{Component, ExceptionData, StacktraceState};
 
 /// An enhancement rule, comprising exception matchers, frame matchers, and actions.
@@ -49,6 +49,23 @@ impl fmt::Display for Rule {
 }
 
 impl Rule {
+    pub fn new(matchers: Vec<Matcher>, actions: Vec<Action>) -> Self {
+        let (mut frame_matchers, mut exception_matchers) = (Vec::new(), Vec::new());
+
+        for m in matchers {
+            match m {
+                Matcher::Frame(m) => frame_matchers.push(m),
+                Matcher::Exception(m) => exception_matchers.push(m),
+            }
+        }
+
+        Self(Arc::new(RuleInner {
+            frame_matchers,
+            exception_matchers,
+            actions,
+        }))
+    }
+
     /// Checks whether an exception matches this rule.
     pub fn matches_exception(&self, exception_data: &ExceptionData) -> bool {
         self.0
