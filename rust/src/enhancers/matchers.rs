@@ -4,7 +4,7 @@ use globset::GlobBuilder;
 use regex::bytes::{Regex, RegexBuilder};
 use smol_str::SmolStr;
 
-use super::frame::{Frame, FrameField, StringField};
+use super::frame::{Frame, FrameField};
 use super::{Cache, ExceptionData};
 
 /// Enum that wraps a frame or exception matcher.
@@ -182,12 +182,8 @@ enum FrameMatcherInner {
         path_like: bool,
         pattern: Regex,
     },
-    /// Checks whether a frame's family is contained in a given list of families.
-    Family {
-        // NOTE: This is a `Vec` because we typically only have a single item.
-        // NOTE: we optimize for `"all"` by just storing an empty `Vec` and checking for that
-        families: Vec<StringField>,
-    },
+    /// Checks whether a frame's family is one of the allowed families.
+    Family { native: bool, javascript: bool },
     /// Checks whether a frame's in_app field is equal to an expected value.
     InApp { expected: bool },
 }
@@ -209,12 +205,22 @@ impl FrameMatcherInner {
     }
 
     fn new_family(families: &str) -> Self {
-        let mut families: Vec<_> = families.split(',').map(StringField::new).collect();
-        if families.contains(&StringField::new("all")) {
-            families = vec![];
+        let (mut native, mut javascript) = (false, false);
+
+        for f in families.split(',') {
+            match f {
+                "native" => native = true,
+                "javascript" => javascript = true,
+                "all" => {
+                    native = true;
+                    javascript = true;
+                    break;
+                }
+                _ => continue,
+            }
         }
 
-        Self::Family { families }
+        Self::Family { native, javascript }
     }
 
     fn new_in_app(expected: &str) -> anyhow::Result<Self> {
@@ -247,12 +253,16 @@ impl FrameMatcherInner {
                 }
                 false
             }
-            FrameMatcherInner::Family { families } => {
+            FrameMatcherInner::Family { native, javascript } => {
                 let Some(value) = frame.get_field(FrameField::Family) else {
                     return false;
                 };
 
-                families.is_empty() || families.contains(value)
+                match value.as_ref() {
+                    "native" => *native,
+                    "javascript" => *javascript,
+                    _ => false,
+                }
             }
             FrameMatcherInner::InApp { expected } => frame.in_app == *expected,
         }
