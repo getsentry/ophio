@@ -254,7 +254,7 @@ impl FrameMatcherInner {
 
                 families.is_empty() || families.contains(value)
             }
-            FrameMatcherInner::InApp { expected } => frame.in_app == *expected,
+            FrameMatcherInner::InApp { expected } => frame.in_app.unwrap_or_default() == *expected,
         }
     }
 }
