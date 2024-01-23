@@ -13,7 +13,8 @@ class Enhancements:
     def empty() -> 'Enhancements':
         ...
 
-    def __new__(cls, input: str, cache: Cache) -> 'Enhancements':
+    @staticmethod
+    def parse(input: str, cache: Cache) -> 'Enhancements':
         ...
 
     @staticmethod
