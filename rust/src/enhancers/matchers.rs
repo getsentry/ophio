@@ -265,7 +265,7 @@ impl FrameMatcherInner {
                     _ => false,
                 }
             }
-            FrameMatcherInner::InApp { expected } => frame.in_app == *expected,
+            FrameMatcherInner::InApp { expected } => frame.in_app.unwrap_or_default() == *expected,
         }
     }
 }

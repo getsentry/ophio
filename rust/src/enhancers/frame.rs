@@ -9,11 +9,12 @@ pub struct Frame {
     pub category: Option<StringField>,
     pub family: Option<StringField>,
     pub function: Option<StringField>,
-    pub in_app: bool,
     pub module: Option<StringField>,
-    pub orig_in_app: Option<bool>,
     pub package: Option<StringField>,
     pub path: Option<StringField>,
+
+    pub in_app: Option<bool>,
+    pub orig_in_app: Option<bool>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -67,10 +68,7 @@ impl Frame {
                 .get("function")
                 .and_then(|s| s.as_str())
                 .map(SmolStr::new),
-            in_app: raw_frame
-                .get("in_app")
-                .and_then(|s| s.as_bool())
-                .unwrap_or_default(),
+            in_app: raw_frame.get("in_app").and_then(|s| s.as_bool()),
 
             module: raw_frame
                 .get("module")

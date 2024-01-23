@@ -72,11 +72,7 @@ impl FlagAction {
     pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize) {
         if self.ty == FlagActionType::App {
             for frame in self.slice_to_range_mut(frames, idx) {
-                let current_in_app = frame.in_app;
-                if current_in_app != self.flag {
-                    frame.in_app = self.flag;
-                    frame.orig_in_app = frame.orig_in_app.or(Some(current_in_app));
-                }
+                frame.in_app = Some(self.flag);
             }
         }
     }
@@ -125,7 +121,7 @@ impl FlagAction {
 
     fn in_app_changed(&self, component: &Component, frame: &Frame) -> bool {
         if let Some(orig_in_app) = frame.orig_in_app {
-            orig_in_app != frame.in_app
+            Some(orig_in_app) != frame.in_app
         } else {
             self.flag == component.contributes
         }
@@ -265,7 +261,7 @@ mod tests {
 
         enhancements.apply_modifications_to_frames(&mut frames, &Default::default());
 
-        assert!(frames[0].in_app);
-        assert!(frames[1].in_app);
+        assert_eq!(frames[0].in_app, Some(true));
+        assert_eq!(frames[1].in_app, Some(true));
     }
 }
