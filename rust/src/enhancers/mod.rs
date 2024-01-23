@@ -58,7 +58,7 @@ impl Enhancements {
             if line.is_empty() || line.starts_with('#') {
                 continue;
             }
-            let rule = cache.get_or_try_insert_rule(line, grammar::parse_rule)?;
+            let rule = cache.get_or_try_insert_rule(line)?;
             all_rules.push(rule);
         }
 

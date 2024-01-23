@@ -1,8 +1,7 @@
 use std::fmt;
 use std::sync::Arc;
 
-use globset::GlobBuilder;
-use regex::bytes::{Regex, RegexBuilder};
+use regex::bytes::Regex;
 use smol_str::SmolStr;
 
 use super::frame::{Frame, FrameField};
@@ -196,7 +195,7 @@ impl FrameMatcherInner {
         pattern: &str,
         cache: &mut Cache,
     ) -> anyhow::Result<Self> {
-        let pattern = cache.get_or_try_insert_regex(pattern, path_like, translate_pattern)?;
+        let pattern = cache.get_or_try_insert_regex(pattern, path_like)?;
         Ok(Self::Field {
             field,
             path_like,
@@ -306,7 +305,7 @@ pub struct ExceptionMatcher {
 
 impl ExceptionMatcher {
     fn new_type(negated: bool, raw_pattern: &str, cache: &mut Cache) -> anyhow::Result<Self> {
-        let pattern = cache.get_or_try_insert_regex(raw_pattern, false, translate_pattern)?;
+        let pattern = cache.get_or_try_insert_regex(raw_pattern, false)?;
         Ok(Self {
             negated,
             pattern,
@@ -316,7 +315,7 @@ impl ExceptionMatcher {
     }
 
     fn new_value(negated: bool, raw_pattern: &str, cache: &mut Cache) -> anyhow::Result<Self> {
-        let pattern = cache.get_or_try_insert_regex(raw_pattern, false, translate_pattern)?;
+        let pattern = cache.get_or_try_insert_regex(raw_pattern, false)?;
         Ok(Self {
             negated,
             pattern,
@@ -326,7 +325,7 @@ impl ExceptionMatcher {
     }
 
     fn new_mechanism(negated: bool, raw_pattern: &str, cache: &mut Cache) -> anyhow::Result<Self> {
-        let pattern = cache.get_or_try_insert_regex(raw_pattern, false, translate_pattern)?;
+        let pattern = cache.get_or_try_insert_regex(raw_pattern, false)?;
         Ok(Self {
             negated,
             pattern,
@@ -362,19 +361,6 @@ impl fmt::Display for ExceptionMatcher {
 
         write!(f, "{ty}:{raw_pattern}")
     }
-}
-
-fn translate_pattern(pat: &str, is_path_matcher: bool) -> anyhow::Result<Regex> {
-    let pat = if is_path_matcher {
-        pat.replace('\\', "/")
-    } else {
-        pat.into()
-    };
-    let mut builder = GlobBuilder::new(&pat);
-    builder.literal_separator(is_path_matcher);
-    builder.case_insensitive(true);
-    let glob = builder.build()?;
-    Ok(RegexBuilder::new(glob.regex()).build()?)
 }
 
 #[cfg(test)]
