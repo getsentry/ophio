@@ -196,8 +196,7 @@ impl FrameMatcherInner {
         pattern: &str,
         cache: &mut Cache,
     ) -> anyhow::Result<Self> {
-        let pattern =
-            cache.get_or_try_insert_regex(pattern, |pat| translate_pattern(pat, path_like))?;
+        let pattern = cache.get_or_try_insert_regex(pattern, path_like, translate_pattern)?;
         Ok(Self::Field {
             field,
             path_like,
@@ -307,8 +306,7 @@ pub struct ExceptionMatcher {
 
 impl ExceptionMatcher {
     fn new_type(negated: bool, raw_pattern: &str, cache: &mut Cache) -> anyhow::Result<Self> {
-        let pattern =
-            cache.get_or_try_insert_regex(raw_pattern, |pat| translate_pattern(pat, false))?;
+        let pattern = cache.get_or_try_insert_regex(raw_pattern, false, translate_pattern)?;
         Ok(Self {
             negated,
             pattern,
@@ -318,8 +316,7 @@ impl ExceptionMatcher {
     }
 
     fn new_value(negated: bool, raw_pattern: &str, cache: &mut Cache) -> anyhow::Result<Self> {
-        let pattern =
-            cache.get_or_try_insert_regex(raw_pattern, |pat| translate_pattern(pat, false))?;
+        let pattern = cache.get_or_try_insert_regex(raw_pattern, false, translate_pattern)?;
         Ok(Self {
             negated,
             pattern,
@@ -329,8 +326,7 @@ impl ExceptionMatcher {
     }
 
     fn new_mechanism(negated: bool, raw_pattern: &str, cache: &mut Cache) -> anyhow::Result<Self> {
-        let pattern =
-            cache.get_or_try_insert_regex(raw_pattern, |pat| translate_pattern(pat, false))?;
+        let pattern = cache.get_or_try_insert_regex(raw_pattern, false, translate_pattern)?;
         Ok(Self {
             negated,
             pattern,
