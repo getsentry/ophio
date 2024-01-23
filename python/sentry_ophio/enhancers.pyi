@@ -1,6 +1,7 @@
-from typing import Iterator, Any, List
+from typing import Iterator, Any, List, Optional, Tuple
 
 Frame = dict[str, Any]
+ModificationResult = Tuple[Optional[str], Optional[bool]]
 
 
 class Cache:
@@ -28,5 +29,5 @@ class Enhancements:
         self,
         frames: Iterator[Frame],
         exception_data: dict[str, Any],
-    ) -> List[Frame]:
+    ) -> List[ModificationResult]:
         ...
