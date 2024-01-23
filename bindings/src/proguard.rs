@@ -2,15 +2,11 @@ use pyo3::prelude::*;
 use pyo3::types::{IntoPyDict, PyBytes};
 use symbolic::common::{AsSelf, ByteView, SelfCell};
 
-#[pyclass(frozen)]
+#[pyclass(frozen, get_all)]
 pub struct JavaStackFrame {
-    #[pyo3(get)]
     pub class_name: String,
-    #[pyo3(get)]
     pub method: String,
-    #[pyo3(get)]
     pub file: Option<String>,
-    #[pyo3(get)]
     pub line: usize,
 }
 
@@ -73,8 +69,19 @@ impl ProguardMapper {
         self.inner.get().mapper.remap_method(klass, method)
     }
 
-    pub fn remap_frame(&self, klass: &str, method: &str, line: usize) -> Vec<JavaStackFrame> {
-        let frame = proguard::StackFrame::new(klass, method, line);
+    pub fn remap_frame(
+        &self,
+        klass: &str,
+        method: &str,
+        line: usize,
+        parameters: Option<&str>,
+    ) -> Vec<JavaStackFrame> {
+        let frame = if let Some(parameters) = parameters {
+            proguard::StackFrame::with_parameters(klass, method, parameters)
+        } else {
+            proguard::StackFrame::new(klass, method, line)
+        };
+
         self.inner
             .get()
             .mapper
