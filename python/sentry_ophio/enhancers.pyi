@@ -1,33 +1,33 @@
-from typing import Iterator, Any, List, Optional, Tuple
+from typing import Iterator, Any
 
 Frame = dict[str, Any]
-ModificationResult = Tuple[Optional[str], Optional[bool]]
+ModificationResult = tuple[str | None, bool | None]
 
 
 class Cache:
-    def __new__(cls, size: int) -> 'Cache':
+    def __new__(cls, size: int) -> Cache:
         ...
 
 
 class Enhancements:
     @staticmethod
-    def empty() -> 'Enhancements':
+    def empty() -> Enhancements:
         ...
 
     @staticmethod
-    def parse(input: str, cache: Cache) -> 'Enhancements':
+    def parse(input: str, cache: Cache) -> Enhancements:
         ...
 
     @staticmethod
-    def from_config_structure(input: bytes, cache: Cache) -> 'Enhancements':
+    def from_config_structure(input: bytes, cache: Cache) -> Enhancements:
         ...
 
-    def extend_from(self, other: 'Enhancements'):
+    def extend_from(self, other: Enhancements):
         ...
 
     def apply_modifications_to_frames(
         self,
         frames: Iterator[Frame],
         exception_data: dict[str, Any],
-    ) -> List[ModificationResult]:
+    ) -> list[ModificationResult]:
         ...
