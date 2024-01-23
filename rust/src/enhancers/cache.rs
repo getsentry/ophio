@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
+use globset::GlobBuilder;
 use lru::LruCache;
-use regex::bytes::Regex;
+use regex::bytes::{Regex, RegexBuilder};
 use smol_str::SmolStr;
 
-use super::rules::Rule;
+use super::{grammar::parse_rule, rules::Rule};
 
 /// An LRU cache for parsing [`Rule`]s.
 #[derive(Debug, Default)]
@@ -23,37 +24,30 @@ impl Cache {
         Self { rules, regex }
     }
 
-    /// Gets the rule for the string `key` from the cache or computes and inserts
-    /// it using `f` if it is not present.
-    pub fn get_or_try_insert_rule<F>(&mut self, key: &str, f: F) -> anyhow::Result<Rule>
-    where
-        F: Fn(&str) -> anyhow::Result<Rule>,
-    {
+    /// Gets the rule for the string `key` from the cache or parses and inserts
+    /// it using `parse_rule` if it is not present.
+    pub fn get_or_try_insert_rule(&mut self, key: &str) -> anyhow::Result<Rule> {
         match self.rules.as_mut() {
             Some(cache) => {
                 if let Some(rule) = cache.get(key) {
                     return Ok(rule.clone());
                 }
 
-                let rule = f(key)?;
+                let rule = parse_rule(key)?;
                 cache.put(key.into(), rule.clone());
                 Ok(rule)
             }
-            None => f(key),
+            None => parse_rule(key),
         }
     }
 
-    /// Gets the regex for the string `key` from the cache or computes and inserts
-    /// it using `f` if it is not present.
-    pub fn get_or_try_insert_regex<F>(
+    /// Gets the regex for the string `key` and the boolean `is_path` from the cache or computes and inserts
+    /// it using `translate_pattern` if it is not present.
+    pub fn get_or_try_insert_regex(
         &mut self,
         key: &str,
         is_path: bool,
-        f: F,
-    ) -> anyhow::Result<Arc<Regex>>
-    where
-        F: Fn(&str, bool) -> anyhow::Result<Regex>,
-    {
+    ) -> anyhow::Result<Arc<Regex>> {
         match self.regex.as_mut() {
             Some(cache) => {
                 let key = (key.into(), is_path);
@@ -61,11 +55,24 @@ impl Cache {
                     return Ok(regex.clone());
                 }
 
-                let regex = f(&key.0, key.1).map(Arc::new)?;
+                let regex = translate_pattern(&key.0, key.1).map(Arc::new)?;
                 cache.put(key, regex.clone());
                 Ok(regex)
             }
-            None => f(key, is_path).map(Arc::new),
+            None => translate_pattern(key, is_path).map(Arc::new),
         }
     }
+}
+
+fn translate_pattern(pat: &str, is_path_matcher: bool) -> anyhow::Result<Regex> {
+    let pat = if is_path_matcher {
+        pat.replace('\\', "/")
+    } else {
+        pat.into()
+    };
+    let mut builder = GlobBuilder::new(&pat);
+    builder.literal_separator(is_path_matcher);
+    builder.case_insensitive(true);
+    let glob = builder.build()?;
+    Ok(RegexBuilder::new(glob.regex()).build()?)
 }
