@@ -3,17 +3,17 @@ use smol_str::SmolStr;
 mod actions;
 mod cache;
 mod config_structure;
+mod families;
 mod frame;
 mod grammar;
 mod matchers;
 mod rules;
 
-use crate::enhancers::config_structure::{EncodedAction, EncodedMatcher};
-
-use self::config_structure::EncodedEnhancements;
-pub use self::frame::{Frame, StringField};
-pub use self::rules::Rule;
 pub use cache::*;
+use config_structure::{EncodedAction, EncodedEnhancements, EncodedMatcher};
+pub use families::Families;
+pub use frame::{Frame, StringField};
+pub use rules::Rule;
 
 #[derive(Debug, Clone, Default)]
 pub struct ExceptionData {
