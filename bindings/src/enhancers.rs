@@ -1,5 +1,5 @@
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyIterator};
+use pyo3::types::PyIterator;
 use rust_ophio::enhancers;
 
 #[derive(FromPyObject)]
@@ -107,25 +107,9 @@ impl Enhancements {
 
         let result = frames
             .into_iter()
-            .map(|f| frame_to_dict(py, f))
-            .collect::<PyResult<_>>()?;
+            .map(|f| (f.category.as_ref().map(|c| c.as_str()), f.in_app).into_py(py))
+            .collect();
 
         Ok(result)
     }
-}
-
-fn frame_to_dict(py: Python, frame: enhancers::Frame) -> PyResult<PyObject> {
-    use enhancers::StringField;
-
-    let obj = PyDict::new(py);
-    obj.set_item("category", frame.category.as_ref().map(StringField::as_str))?;
-    obj.set_item("family", frame.family.as_ref().map(StringField::as_str))?;
-    obj.set_item("function", frame.function.as_ref().map(StringField::as_str))?;
-    obj.set_item("module", frame.module.as_ref().map(StringField::as_str))?;
-
-    obj.set_item("package", frame.package.as_ref().map(StringField::as_str))?;
-    obj.set_item("path", frame.path.as_ref().map(StringField::as_str))?;
-    obj.set_item("in_app", frame.in_app)?;
-
-    Ok(obj.into())
 }
