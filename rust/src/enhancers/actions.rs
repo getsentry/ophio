@@ -1,12 +1,19 @@
+//! Actions, which can modify the contents of stack frames or update grouping component contribution
+//! information.
 use std::fmt;
 
 use smol_str::SmolStr;
 
 use super::{frame::Frame, Component, Rule, StacktraceState};
 
+/// The range of an action.
+///
+/// This determines if the action applies to the frames/components before or after the current one.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Range {
+    /// The frames/components after the current one.
     Up,
+    /// The frames/components before the current one.
     Down,
 }
 
@@ -19,11 +26,19 @@ impl fmt::Display for Range {
     }
 }
 
+/// The name of the flag a [`FlagAction`] sets.
+///
+/// The `app` flag is the only one of these that exists on stack frames,
+/// the others belong to grouping components.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FlagActionType {
+    /// The `app` flag.
     App,
+    /// The `group` flag.
     Group,
+    /// The `prefix` flag.
     Prefix,
+    /// The `sentinel` flag.
     Sentinel,
 }
 
@@ -38,14 +53,31 @@ impl fmt::Display for FlagActionType {
     }
 }
 
+/// A flag action.
+///
+/// It comprises three pieces of information:
+/// * which flag it sets;
+/// * whether it sets it to `true` or `false`;
+/// * whether it sets the flag on the current frame/compoent, all previous ones,
+///   or all following ones.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FlagAction {
+    /// The value the flag is set to.
     pub flag: bool,
+    /// Which flag is set by this action.
     pub ty: FlagActionType,
+    /// Which frames/components this action applies to.
+    ///
+    /// `None` means the current one, otherwise see the documentation of `Range`.
     pub range: Option<Range>,
 }
 
 impl FlagAction {
+    /// Returns an iterator over a subslice of the given slice, depending on `self.range`.
+    ///
+    /// * `self.range` == None: returns just `items[idx]`, if it exists.
+    /// * `self.range` == Some(Up): returns `items[idx+1..]`.
+    /// * `self.range` == Some(Down): returns `items[..idx]`.
     fn slice_to_range<'f, I>(&self, items: &'f [I], idx: usize) -> impl Iterator<Item = &'f I> {
         let slice = match self.range {
             Some(Range::Up) => items.get(idx + 1..),
@@ -55,6 +87,11 @@ impl FlagAction {
         slice.unwrap_or_default().iter()
     }
 
+    /// Returns a mutable iterator over a subslice of the given slice, depending on `self.range`.
+    ///
+    /// * `self.range` == None: returns just `items[idx]`, if it exists.
+    /// * `self.range` == Some(Up): returns `items[idx+1..]`.
+    /// * `self.range` == Some(Down): returns `items[..idx]`.
     fn slice_to_range_mut<'f, I>(
         &self,
         items: &'f mut [I],
@@ -192,7 +229,7 @@ impl Action {
         !matches!(self, Action::Var(VarAction::Category(_)))
     }
 
-    /// Applies this action's modification to the given list of frames at the given index.
+    /// Applies this action's modification to `frames` at the index `idx`.
     pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize) {
         match self {
             Action::Flag(action) => action.apply_modifications_to_frame(frames, idx),
