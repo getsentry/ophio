@@ -2,12 +2,14 @@ use std::fmt;
 
 use smol_str::SmolStr;
 
+use super::families::Families;
+
 pub type StringField = SmolStr;
 
 #[derive(Debug, Clone, Default)]
 pub struct Frame {
     pub category: Option<StringField>,
-    pub family: Option<StringField>,
+    pub family: Families,
     pub function: Option<StringField>,
     pub module: Option<StringField>,
     pub package: Option<StringField>,
@@ -20,7 +22,6 @@ pub struct Frame {
 #[derive(Debug, Clone, Copy)]
 pub enum FrameField {
     Category,
-    Family,
     Function,
     Module,
     Package,
@@ -31,7 +32,6 @@ impl fmt::Display for FrameField {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             FrameField::Category => write!(f, "category"),
-            FrameField::Family => write!(f, "family"),
             FrameField::Function => write!(f, "function"),
             FrameField::Module => write!(f, "module"),
             FrameField::Package => write!(f, "package"),
@@ -44,7 +44,6 @@ impl Frame {
     pub fn get_field(&self, field: FrameField) -> Option<&StringField> {
         match field {
             FrameField::Category => self.category.as_ref(),
-            FrameField::Family => self.family.as_ref(),
             FrameField::Function => self.function.as_ref(),
             FrameField::Module => self.module.as_ref(),
             FrameField::Package => self.package.as_ref(),
@@ -59,11 +58,12 @@ impl Frame {
                 .pointer("/data/category")
                 .and_then(|s| s.as_str())
                 .map(SmolStr::new),
-            family: raw_frame
-                .get("platform")
-                .and_then(|s| s.as_str())
-                .or(Some(platform))
-                .map(SmolStr::new),
+            family: Families::new(
+                raw_frame
+                    .get("platform")
+                    .and_then(|s| s.as_str())
+                    .unwrap_or(platform),
+            ),
             function: raw_frame
                 .get("function")
                 .and_then(|s| s.as_str())

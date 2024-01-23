@@ -5,6 +5,7 @@ use globset::GlobBuilder;
 use regex::bytes::{Regex, RegexBuilder};
 use smol_str::SmolStr;
 
+use super::families::Families;
 use super::frame::{Frame, FrameField};
 use super::{Cache, ExceptionData};
 
@@ -184,7 +185,7 @@ enum FrameMatcherInner {
         pattern: Arc<Regex>,
     },
     /// Checks whether a frame's family is one of the allowed families.
-    Family { native: bool, javascript: bool },
+    Family { families: Families },
     /// Checks whether a frame's in_app field is equal to an expected value.
     InApp { expected: bool },
 }
@@ -206,22 +207,9 @@ impl FrameMatcherInner {
     }
 
     fn new_family(families: &str) -> Self {
-        let (mut native, mut javascript) = (false, false);
-
-        for f in families.split(',') {
-            match f {
-                "native" => native = true,
-                "javascript" => javascript = true,
-                "all" => {
-                    native = true;
-                    javascript = true;
-                    break;
-                }
-                _ => continue,
-            }
+        Self::Family {
+            families: Families::new(families),
         }
-
-        Self::Family { native, javascript }
     }
 
     fn new_in_app(expected: &str) -> anyhow::Result<Self> {
@@ -254,17 +242,7 @@ impl FrameMatcherInner {
                 }
                 false
             }
-            FrameMatcherInner::Family { native, javascript } => {
-                let Some(value) = frame.get_field(FrameField::Family) else {
-                    return false;
-                };
-
-                match value.as_ref() {
-                    "native" => *native,
-                    "javascript" => *javascript,
-                    _ => false,
-                }
-            }
+            FrameMatcherInner::Family { families } => families.matches(frame.family),
             FrameMatcherInner::InApp { expected } => frame.in_app.unwrap_or_default() == *expected,
         }
     }

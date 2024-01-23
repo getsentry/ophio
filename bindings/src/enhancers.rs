@@ -83,7 +83,7 @@ impl Enhancements {
                 let frame: Frame = frame?.extract()?;
                 let frame = enhancers::Frame {
                     category: frame.category.0,
-                    family: frame.family.0,
+                    family: enhancers::Families::new(frame.family.0.as_deref().unwrap_or("other")),
                     function: frame.function.0,
                     module: frame.module.0,
                     package: frame.package.0,
