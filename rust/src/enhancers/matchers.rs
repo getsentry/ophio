@@ -7,8 +7,7 @@
 use std::fmt;
 use std::sync::Arc;
 
-use globset::GlobBuilder;
-use regex::bytes::{Regex, RegexBuilder};
+use regex::bytes::Regex;
 use smol_str::SmolStr;
 
 use super::families::Families;
@@ -113,15 +112,17 @@ impl Matcher {
             "error.type" | "type" => Ok(Self::Exception(ExceptionMatcher::new_type(
                 negated,
                 raw_pattern,
+                cache,
             )?)),
 
             "error.value" | "value" => Ok(Self::Exception(ExceptionMatcher::new_value(
                 negated,
                 raw_pattern,
+                cache,
             )?)),
 
             "error.mechanism" | "mechanism" => Ok(Self::Exception(
-                ExceptionMatcher::new_mechanism(negated, raw_pattern)?,
+                ExceptionMatcher::new_mechanism(negated, raw_pattern, cache)?,
             )),
 
             matcher_type => anyhow::bail!("Unknown matcher `{matcher_type}`"),
@@ -242,8 +243,7 @@ impl FrameMatcherInner {
         pattern: &str,
         cache: &mut Cache,
     ) -> anyhow::Result<Self> {
-        let pattern =
-            cache.get_or_try_insert_regex(pattern, |pat| translate_pattern(pat, path_like))?;
+        let pattern = cache.get_or_try_insert_regex(pattern, path_like)?;
         Ok(Self::Field {
             field,
             path_like,
@@ -334,7 +334,7 @@ pub struct ExceptionMatcher {
     /// its relevant field *doesn't* fit the pattern.
     negated: bool,
     /// The regex pattern to check the exception field against.
-    pattern: Regex,
+    pattern: Arc<Regex>,
     /// The field to check.
     ty: ExceptionMatcherType,
     /// The string pattern this matcher was constructed from. This is used for the `Display` impl.
@@ -343,8 +343,8 @@ pub struct ExceptionMatcher {
 
 impl ExceptionMatcher {
     /// Creates a matcher that checks an exception's `type` field.
-    fn new_type(negated: bool, raw_pattern: &str) -> anyhow::Result<Self> {
-        let pattern = translate_pattern(raw_pattern, false)?;
+    fn new_type(negated: bool, raw_pattern: &str, cache: &mut Cache) -> anyhow::Result<Self> {
+        let pattern = cache.get_or_try_insert_regex(raw_pattern, false)?;
         Ok(Self {
             negated,
             pattern,
@@ -354,8 +354,8 @@ impl ExceptionMatcher {
     }
 
     /// Creates a matcher that checks an exception's `value` field.
-    fn new_value(negated: bool, raw_pattern: &str) -> anyhow::Result<Self> {
-        let pattern = translate_pattern(raw_pattern, false)?;
+    fn new_value(negated: bool, raw_pattern: &str, cache: &mut Cache) -> anyhow::Result<Self> {
+        let pattern = cache.get_or_try_insert_regex(raw_pattern, false)?;
         Ok(Self {
             negated,
             pattern,
@@ -365,8 +365,8 @@ impl ExceptionMatcher {
     }
 
     /// Creates a matcher that checks an exception's `mechanism` field.
-    fn new_mechanism(negated: bool, raw_pattern: &str) -> anyhow::Result<Self> {
-        let pattern = translate_pattern(raw_pattern, false)?;
+    fn new_mechanism(negated: bool, raw_pattern: &str, cache: &mut Cache) -> anyhow::Result<Self> {
+        let pattern = cache.get_or_try_insert_regex(raw_pattern, false)?;
         Ok(Self {
             negated,
             pattern,
@@ -403,23 +403,6 @@ impl fmt::Display for ExceptionMatcher {
 
         write!(f, "{ty}:{raw_pattern}")
     }
-}
-
-/// Translates a glob pattern into a Regex.
-///
-/// If `is_path_matcher` is true, backslashes will be normalized to slashes and
-/// `*` will not match across slashes.
-fn translate_pattern(pat: &str, is_path_matcher: bool) -> anyhow::Result<Regex> {
-    let pat = if is_path_matcher {
-        pat.replace('\\', "/")
-    } else {
-        pat.into()
-    };
-    let mut builder = GlobBuilder::new(&pat);
-    builder.literal_separator(is_path_matcher);
-    builder.case_insensitive(true);
-    let glob = builder.build()?;
-    Ok(RegexBuilder::new(glob.regex()).build()?)
 }
 
 #[cfg(test)]
