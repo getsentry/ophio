@@ -56,8 +56,8 @@ impl Enhancements {
         Self(enhancers::Enhancements::default())
     }
 
-    #[new]
-    fn new(input: &str, cache: &mut Cache) -> PyResult<Self> {
+    #[staticmethod]
+    fn parse(input: &str, cache: &mut Cache) -> PyResult<Self> {
         let inner = enhancers::Enhancements::parse(input, &mut cache.0)?;
         Ok(Self(inner))
     }
