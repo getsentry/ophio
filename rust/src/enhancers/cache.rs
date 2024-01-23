@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use lru::LruCache;
 use regex::bytes::Regex;
 
@@ -7,7 +9,7 @@ use super::rules::Rule;
 #[derive(Debug, Default)]
 pub struct Cache {
     rules: Option<LruCache<Box<str>, Rule>>,
-    regex: Option<LruCache<Box<str>, Regex>>,
+    regex: Option<LruCache<Box<str>, Arc<Regex>>>,
 }
 
 impl Cache {
@@ -40,7 +42,9 @@ impl Cache {
         }
     }
 
-    pub fn get_or_try_insert_regex<F>(&mut self, key: &str, f: F) -> anyhow::Result<Regex>
+    /// Gets the regex for the string `key` from the cache or computes and inserts
+    /// it using `f` if it is not present.
+    pub fn get_or_try_insert_regex<F>(&mut self, key: &str, f: F) -> anyhow::Result<Arc<Regex>>
     where
         F: Fn(&str) -> anyhow::Result<Regex>,
     {
@@ -50,11 +54,11 @@ impl Cache {
                     return Ok(regex.clone());
                 }
 
-                let regex = f(key)?;
+                let regex = f(key).map(Arc::new)?;
                 cache.put(key.into(), regex.clone());
                 Ok(regex)
             }
-            None => f(key),
+            None => f(key).map(Arc::new),
         }
     }
 }
