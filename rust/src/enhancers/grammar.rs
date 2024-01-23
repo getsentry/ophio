@@ -1,5 +1,8 @@
-// The grammar was adapted to `nom` from:
-// https://github.com/getsentry/sentry/blob/e5c5e56d176d96081ce4b25424e6ec7d3ba17cff/src/sentry/grouping/enhancer/__init__.py#L42-L79
+//! Parse enhancement rules from the string representation.
+//!
+//! The parser is made using the `nom` parser combinator library.
+//! The grammar was adapted to `nom` from:
+//! https://github.com/getsentry/sentry/blob/e5c5e56d176d96081ce4b25424e6ec7d3ba17cff/src/sentry/grouping/enhancer/__init__.py#L42-L79
 
 // TODO:
 // - we should probably support better Error handling
@@ -164,6 +167,7 @@ fn actions(input: &str) -> IResult<&str, Vec<Action>> {
     Ok((input, actions))
 }
 
+/// Parses a [`Rule`] from its string representation.
 pub fn parse_rule(input: &str) -> anyhow::Result<Rule> {
     let comment = tuple((space0, char('#'), many0(anychar)));
     let (_input, (matchers, actions, _)) =
