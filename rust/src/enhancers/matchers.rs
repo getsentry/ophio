@@ -92,15 +92,15 @@ impl Matcher {
 
             // Exception matchers
             "error.type" | "type" => Ok(Self::Exception(ExceptionMatcher::new_type(
-                negated, argument,
+                negated, argument, cache,
             )?)),
 
             "error.value" | "value" => Ok(Self::Exception(ExceptionMatcher::new_value(
-                negated, argument,
+                negated, argument, cache,
             )?)),
 
             "error.mechanism" | "mechanism" => Ok(Self::Exception(
-                ExceptionMatcher::new_mechanism(negated, argument)?,
+                ExceptionMatcher::new_mechanism(negated, argument, cache)?,
             )),
 
             matcher_type => anyhow::bail!("Unknown matcher `{matcher_type}`"),
@@ -300,14 +300,15 @@ impl fmt::Display for ExceptionMatcherType {
 #[derive(Debug, Clone)]
 pub struct ExceptionMatcher {
     negated: bool,
-    pattern: Regex,
+    pattern: Arc<Regex>,
     ty: ExceptionMatcherType,
     raw_pattern: SmolStr,
 }
 
 impl ExceptionMatcher {
-    fn new_type(negated: bool, raw_pattern: &str) -> anyhow::Result<Self> {
-        let pattern = translate_pattern(raw_pattern, false)?;
+    fn new_type(negated: bool, raw_pattern: &str, cache: &mut Cache) -> anyhow::Result<Self> {
+        let pattern =
+            cache.get_or_try_insert_regex(raw_pattern, |pat| translate_pattern(pat, false))?;
         Ok(Self {
             negated,
             pattern,
@@ -316,8 +317,9 @@ impl ExceptionMatcher {
         })
     }
 
-    fn new_value(negated: bool, raw_pattern: &str) -> anyhow::Result<Self> {
-        let pattern = translate_pattern(raw_pattern, false)?;
+    fn new_value(negated: bool, raw_pattern: &str, cache: &mut Cache) -> anyhow::Result<Self> {
+        let pattern =
+            cache.get_or_try_insert_regex(raw_pattern, |pat| translate_pattern(pat, false))?;
         Ok(Self {
             negated,
             pattern,
@@ -326,8 +328,9 @@ impl ExceptionMatcher {
         })
     }
 
-    fn new_mechanism(negated: bool, raw_pattern: &str) -> anyhow::Result<Self> {
-        let pattern = translate_pattern(raw_pattern, false)?;
+    fn new_mechanism(negated: bool, raw_pattern: &str, cache: &mut Cache) -> anyhow::Result<Self> {
+        let pattern =
+            cache.get_or_try_insert_regex(raw_pattern, |pat| translate_pattern(pat, false))?;
         Ok(Self {
             negated,
             pattern,
