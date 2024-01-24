@@ -1,4 +1,4 @@
-from typing import Iterator, Any
+from typing import Any, Iterator
 
 Frame = dict[str, Any]
 ModificationResult = tuple[str | None, bool | None]
