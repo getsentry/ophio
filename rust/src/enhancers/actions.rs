@@ -46,15 +46,6 @@ pub struct FlagAction {
 }
 
 impl FlagAction {
-    fn slice_to_range<'f, I>(&self, items: &'f [I], idx: usize) -> impl Iterator<Item = &'f I> {
-        let slice = match self.range {
-            Some(Range::Up) => items.get(idx + 1..),
-            Some(Range::Down) => items.get(..idx),
-            None => items.get(idx..idx + 1),
-        };
-        slice.unwrap_or_default().iter()
-    }
-
     fn slice_to_range_mut<'f, I>(
         &self,
         items: &'f mut [I],
@@ -69,10 +60,11 @@ impl FlagAction {
     }
 
     /// Applies this action's modification to the given list of frames at the given index.
-    pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize) {
+    pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize, rule: &Rule) {
         if self.ty == FlagActionType::App {
             for frame in self.slice_to_range_mut(frames, idx) {
                 frame.in_app = Some(self.flag);
+                frame.in_app_last_changed = Some(rule.clone());
             }
         }
     }
@@ -80,15 +72,13 @@ impl FlagAction {
     fn update_frame_components_contributions(
         &self,
         components: &mut [Component],
-        frames: &[Frame],
         idx: usize,
         rule: &Rule,
     ) {
         let rule_hint = "stack trace rule";
         let components = self.slice_to_range_mut(components, idx);
-        let frames = self.slice_to_range(frames, idx);
 
-        for (component, frame) in components.zip(frames) {
+        for component in components {
             match self.ty {
                 FlagActionType::Group => {
                     if component.contributes != self.flag {
@@ -98,12 +88,7 @@ impl FlagAction {
                     }
                 }
                 FlagActionType::App => {
-                    // The in app flag was set by `apply_modifications_to_frame`
-                    // but we want to add a hint if there is none yet.
-                    if self.in_app_changed(component, frame) {
-                        let state = if self.flag { "in-app" } else { "out of app" };
-                        component.hint = Some(format!("marked {state} by {rule_hint} ({rule})"));
-                    }
+                    //See Enhancements::update_frame_components_contributions
                 }
                 FlagActionType::Prefix => {
                     component.is_prefix_frame = self.flag;
@@ -116,14 +101,6 @@ impl FlagAction {
                         Some(format!("marked as sentinel frame by {rule_hint} ({rule})"));
                 }
             }
-        }
-    }
-
-    fn in_app_changed(&self, component: &Component, frame: &Frame) -> bool {
-        if let Some(orig_in_app) = frame.orig_in_app {
-            Some(orig_in_app) != frame.in_app
-        } else {
-            self.flag == component.contributes
         }
     }
 }
@@ -152,7 +129,7 @@ impl VarAction {
         {
             if let Self::Category(value) = self {
                 if let Some(frame) = frames.get_mut(idx) {
-                    frame.category = Some(value.clone())
+                    frame.category = Some(value.clone());
                 }
             }
         }
@@ -193,9 +170,9 @@ impl Action {
     }
 
     /// Applies this action's modification to the given list of frames at the given index.
-    pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize) {
+    pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize, rule: &Rule) {
         match self {
-            Action::Flag(action) => action.apply_modifications_to_frame(frames, idx),
+            Action::Flag(action) => action.apply_modifications_to_frame(frames, idx, rule),
             Action::Var(action) => action.apply_modifications_to_frame(frames, idx),
         }
     }
@@ -203,12 +180,11 @@ impl Action {
     pub fn update_frame_components_contributions(
         &self,
         components: &mut [Component],
-        frames: &[Frame],
         idx: usize,
         rule: &Rule,
     ) {
         if let Self::Flag(action) = self {
-            action.update_frame_components_contributions(components, frames, idx, rule);
+            action.update_frame_components_contributions(components, idx, rule);
         }
     }
 
