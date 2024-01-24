@@ -2,7 +2,7 @@
 //!
 //! The parser is made using the `nom` parser combinator library.
 //! The grammar was adapted to `nom` from:
-//! https://github.com/getsentry/sentry/blob/e5c5e56d176d96081ce4b25424e6ec7d3ba17cff/src/sentry/grouping/enhancer/__init__.py#L42-L79
+//! <https://github.com/getsentry/sentry/blob/e5c5e56d176d96081ce4b25424e6ec7d3ba17cff/src/sentry/grouping/enhancer/__init__.py#L42-L79>
 
 // TODO:
 // - we should probably support better Error handling
