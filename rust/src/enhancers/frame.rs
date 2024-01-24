@@ -16,7 +16,6 @@ pub struct Frame {
     pub path: Option<StringField>,
 
     pub in_app: Option<bool>,
-    pub orig_in_app: Option<bool>,
     pub in_app_last_changed: Option<Rule>,
 }
 
@@ -75,8 +74,6 @@ impl Frame {
                 .get("module")
                 .and_then(|s| s.as_str())
                 .map(SmolStr::new),
-
-            orig_in_app: None,
 
             package: raw_frame
                 .get("package")
