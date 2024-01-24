@@ -27,7 +27,7 @@ impl Cache {
     }
 
     /// Gets the rule for the string `key` from the cache or parses and inserts
-    /// it using [`parse_rule`] if it is not present.
+    /// it using `parse_rule` if it is not present.
     pub fn get_or_try_insert_rule(&mut self, key: &str) -> anyhow::Result<Rule> {
         match self.rules.as_mut() {
             Some(cache) => {
@@ -44,7 +44,7 @@ impl Cache {
     }
 
     /// Gets the regex for the string `key` and the boolean `is_path` from the cache or computes and inserts
-    /// it using [`translate_pattern`] if it is not present.
+    /// it using `translate_pattern` if it is not present.
     pub fn get_or_try_insert_regex(
         &mut self,
         key: &str,
