@@ -17,7 +17,6 @@ tests: test
 INDEX_URL=--index-url https://pypi.devinfra.sentry.io/simple
 
 install-python-dependencies:
-	pip uninstall -qqy uwsgi  # pip doesn't do well with swapping drop-ins
 	pip install $(INDEX_URL) -r requirements-build.txt
 	pip install $(INDEX_URL) -r requirements.txt
 	pip install $(INDEX_URL) -e .
