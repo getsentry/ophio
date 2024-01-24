@@ -73,11 +73,11 @@ pub struct FlagAction {
 }
 
 impl FlagAction {
-    /// Returns a mutable iterator over a subslice of the given slice, depending on `self.range`.
+    /// Returns a mutable iterator over a subslice of `items`, depending on `self.range`.
     ///
-    /// * `self.range` == None: returns just `items[idx]`, if it exists.
-    /// * `self.range` == Some(Up): returns `items[idx+1..]`.
-    /// * `self.range` == Some(Down): returns `items[..idx]`.
+    /// * `self.range` == `None`: returns just `items[idx]`, if it exists.
+    /// * `self.range` == `Some(Up)`: returns `items[idx+1..]`.
+    /// * `self.range` == `Some(Down)`: returns `items[..idx]`.
     fn slice_to_range_mut<'f, I>(
         &self,
         items: &'f mut [I],
@@ -91,7 +91,7 @@ impl FlagAction {
         slice.unwrap_or_default().iter_mut()
     }
 
-    /// Applies this action's modification to the given list of frames at the given index.
+    /// Applies this action's modification to `frames` at the index `idx`.
     pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize, rule: &Rule) {
         if self.ty == FlagActionType::App {
             for frame in self.slice_to_range_mut(frames, idx) {
@@ -101,6 +101,7 @@ impl FlagAction {
         }
     }
 
+    /// Updates grouping component contribution information according to this action.
     fn update_frame_components_contributions(
         &self,
         components: &mut [Component],
@@ -147,16 +148,34 @@ impl fmt::Display for FlagAction {
     }
 }
 
+/// A variable action.
+///
+/// These actions set variables to values. The type of the
+/// value depends on the variable. The variable set by a var action
+/// may be a property of a frame (`category`) or of the whole
+/// [`StacktraceState`] (the rest).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VarAction {
+    /// The `min-frames` variable on a [`StacktraceState`].
+    ///
+    /// The value must be a number.
     MinFrames(usize),
+    /// The `max-frames` variable on a [`StacktraceState`].
+    ///
+    /// The value must be a number.
     MaxFrames(usize),
+    /// The `category` variable on a [`Frame`].
+    ///
+    /// The value must be a string.
     Category(SmolStr),
+    /// The `invert-stacktrace` variable on a [`StacktraceState`].
+    ///
+    /// The value must be a boolean.
     InvertStacktrace(bool),
 }
 
 impl VarAction {
-    /// Applies this action's modification to the given list of frames at the given index.
+    /// Applies this action's modification to `frames` at the index `idx`.
     fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize) {
         {
             if let Self::Category(value) = self {
@@ -179,6 +198,9 @@ impl fmt::Display for VarAction {
     }
 }
 
+/// An action.
+///
+/// Every action is either a [`VarAction`] or a [`FlagAction`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Action {
     Flag(FlagAction),
@@ -187,6 +209,8 @@ pub enum Action {
 
 impl Action {
     /// Returns true if this action modifies a stacktrace.
+    ///
+    /// This is the case for the `app` flag action and the `category` var action.
     pub fn is_modifier(&self) -> bool {
         matches!(
             self,
@@ -197,6 +221,9 @@ impl Action {
         )
     }
 
+    /// Returns true if this action updates stacktrace or component metadata.
+    ///
+    /// This is true for all actions except the `category` var action.
     pub fn is_updater(&self) -> bool {
         !matches!(self, Action::Var(VarAction::Category(_)))
     }
@@ -209,6 +236,9 @@ impl Action {
         }
     }
 
+    /// Updates grouping component contribution information according to this action.
+    ///
+    /// This is a no-op for var actions.
     pub fn update_frame_components_contributions(
         &self,
         components: &mut [Component],
@@ -220,6 +250,10 @@ impl Action {
         }
     }
 
+    /// Modifies stacktrace state metadata according to this action.
+    ///
+    /// This is only relevant for var actions that update the `min-frames`, `max-frames`
+    /// or `invert-stacktrace` variables, otherwise it is a no-op.
     pub fn modify_stacktrace_state(&self, state: &mut StacktraceState, rule: Rule) {
         if let Self::Var(a) = self {
             match a {
