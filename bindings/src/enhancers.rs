@@ -1,3 +1,7 @@
+//! Python bindings for the enhancers module.
+//!
+//! See `enhancers.pyi` for documentation on classes and functions.
+
 use pyo3::prelude::*;
 use pyo3::types::PyIterator;
 use rust_ophio::enhancers;

@@ -15,3 +15,18 @@ dynamic = ["version"]
 [tool.maturin]
 manifest-path = "bindings/Cargo.toml"
 python-source = "python"
+
+[tool.mypy]
+python_version = "3.10"
+plugins = ["pydantic.mypy"]
+files = ["."]
+exclude = ["^.venv/"]
+
+[tool.black]
+line-length = 100
+target-version = ['py310']
+
+[tool.isort]
+profile = "black"
+line_length = 100
+lines_between_sections = 1
