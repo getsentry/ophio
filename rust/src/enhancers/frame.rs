@@ -1,3 +1,5 @@
+//! Types for stack frames.
+
 use std::fmt;
 
 use smol_str::SmolStr;
@@ -6,19 +8,36 @@ use super::{families::Families, Rule};
 
 pub type StringField = SmolStr;
 
+/// Represents a stack frame for the purposes of grouping rules.
 #[derive(Debug, Clone, Default)]
 pub struct Frame {
     pub category: Option<StringField>,
+    /// The frame's family (`"native"`, `"javascript"`, or `"other"`), represented
+    /// compactly as a bit field.
     pub family: Families,
+    /// The frame's function name.
     pub function: Option<StringField>,
+    /// The frame's module name.
     pub module: Option<StringField>,
+    /// The frame's package name.
     pub package: Option<StringField>,
+    /// The frame's path.
     pub path: Option<StringField>,
 
+    /// The frame's in_app flag.
+    ///
+    /// This denotes whether we consider this frame to have
+    /// originated from within the user's code (`true`) or from
+    /// system libraries, frameworks, &c. (`false`).
     pub in_app: Option<bool>,
+    /// The [`Rule`] that last modified this frame's `in_app` field.
+    ///
+    /// This is used for keeping track of grouping contribution information,
+    /// see [`update_frame_components_contributions`](super::Enhancements::update_frame_components_contributions).
     pub in_app_last_changed: Option<Rule>,
 }
 
+/// The name of a string-valued field in a frame.
 #[derive(Debug, Clone, Copy)]
 pub enum FrameField {
     Category,
@@ -41,6 +60,7 @@ impl fmt::Display for FrameField {
 }
 
 impl Frame {
+    /// Gets the value of `field` from `self`.
     pub fn get_field(&self, field: FrameField) -> Option<&StringField> {
         match field {
             FrameField::Category => self.category.as_ref(),
@@ -51,6 +71,7 @@ impl Frame {
         }
     }
 
+    /// Convenience constructor for use within tests.
     #[cfg(any(test, feature = "testing"))]
     pub fn from_test(raw_frame: &serde_json::Value, platform: &str) -> Self {
         Self {
