@@ -11,6 +11,7 @@ pub type StringField = SmolStr;
 /// Represents a stack frame for the purposes of grouping rules.
 #[derive(Debug, Clone, Default)]
 pub struct Frame {
+    /// The frame's category (e.g. `"telemetry"`, `"ui"`, &c.)
     pub category: Option<StringField>,
     /// The frame's family (`"native"`, `"javascript"`, or `"other"`), represented
     /// compactly as a bit field.
