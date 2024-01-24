@@ -1,5 +1,9 @@
 //! Actions, which can modify the contents of stack frames or update grouping component contribution
 //! information.
+//!
+//! See <https://docs.sentry.io/product/data-management-settings/event-grouping/stack-trace-rules/#actions> for an explanation of
+//! the different types of actions.
+
 use std::fmt;
 
 use smol_str::SmolStr;

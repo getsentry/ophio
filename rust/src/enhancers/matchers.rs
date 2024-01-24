@@ -3,6 +3,9 @@
 //! Every [`Matcher`] is either a [`FrameMatcher`] or an [`ExceptionMatcher`]. A [`FrameMatcher`] checks a stack frame
 //! against a given condition—typically, whether a certain field conforms to a regex pattern. [`ExceptionMatchers`](ExceptionMatcher)
 //! do the same for exceptions.
+//!
+//! See <https://docs.sentry.io/product/data-management-settings/event-grouping/stack-trace-rules/#matchers> for an explanation of how
+//! the various matchers work.
 
 use std::fmt;
 use std::sync::Arc;
