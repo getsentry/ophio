@@ -1,3 +1,5 @@
+//! Caching logic to improve the performance of creating grouping enhancements.
+
 use std::sync::Arc;
 
 use globset::GlobBuilder;
@@ -7,7 +9,7 @@ use smol_str::SmolStr;
 
 use super::{grammar::parse_rule, rules::Rule};
 
-/// An LRU cache for parsing [`Rule`]s.
+/// An LRU cache for memoizing the construction of [`Rules`](Rule) and [`Regexes`](Regex).
 #[derive(Debug, Default)]
 pub struct Cache {
     rules: Option<LruCache<SmolStr, Rule>>,
@@ -25,7 +27,7 @@ impl Cache {
     }
 
     /// Gets the rule for the string `key` from the cache or parses and inserts
-    /// it using `parse_rule` if it is not present.
+    /// it using [`parse_rule`] if it is not present.
     pub fn get_or_try_insert_rule(&mut self, key: &str) -> anyhow::Result<Rule> {
         match self.rules.as_mut() {
             Some(cache) => {
@@ -42,7 +44,7 @@ impl Cache {
     }
 
     /// Gets the regex for the string `key` and the boolean `is_path` from the cache or computes and inserts
-    /// it using `translate_pattern` if it is not present.
+    /// it using [`translate_pattern`] if it is not present.
     pub fn get_or_try_insert_regex(
         &mut self,
         key: &str,
@@ -64,6 +66,11 @@ impl Cache {
     }
 }
 
+/// Translates a glob pattern to a regex.
+///
+/// If `is_path_matcher` is true, backslashes in the pattern will be normalized
+/// to slashes and `*` won't match path separators (i.e. `**` must be used to match
+/// multiple path segments).
 fn translate_pattern(pat: &str, is_path_matcher: bool) -> anyhow::Result<Regex> {
     let pat = if is_path_matcher {
         pat.replace('\\', "/")
