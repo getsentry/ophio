@@ -1,3 +1,13 @@
+//! Functionality for creating grouping enhancements and applying them to stacktraces.
+//!
+//! This module's core type is [`Enhancements`]. It contains a list of [`Rules`](Rule) which can
+//! modify certain stack frames and change grouping metadata.
+//!
+//! `Enhancements` can be parsed from a human-readable string representation with [`parse`](Enhancements::parse)
+//! or from a compact msgpack representation with [`from_config_structure`](Enhancements::from_config_structure).
+//!
+//! They are applied to stacktraces with [`apply_modifications_to_frames`](Enhancements::apply_modifications_to_frames).
+
 use smol_str::SmolStr;
 
 mod actions;
@@ -15,21 +25,34 @@ pub use families::Families;
 pub use frame::{Frame, StringField};
 pub use rules::Rule;
 
+/// Exception data to match against rules.
 #[derive(Debug, Clone, Default)]
 pub struct ExceptionData {
+    /// The exception's type, i.e. name.
     pub ty: Option<SmolStr>,
+    /// The exception's value, i.e. human-readable description.
     pub value: Option<SmolStr>,
+    /// The exception's mechanism.
     pub mechanism: Option<SmolStr>,
 }
 
+/// A collection of [Rules](Rule) that modify the stacktrace and update grouping information.
 #[derive(Debug, Default)]
 pub struct Enhancements {
+    /// The list of all rules in this collection.
     pub(crate) all_rules: Vec<Rule>,
+    /// The list of "modifier rules" in this collection.
+    ///
+    /// Modifier rules are those rules that may modify a stacktrace.
     modifier_rules: Vec<Rule>,
+    /// The list of "updater rules" in this collection.
+    ///
+    /// Updater rules are those rules that may update grouping metadata.
     updater_rules: Vec<Rule>,
 }
 
 impl Enhancements {
+    /// Creates a new `Enhancements` from a list of `Rules`.
     pub fn new(all_rules: Vec<Rule>) -> Self {
         let modifier_rules = all_rules
             .iter()
@@ -50,6 +73,7 @@ impl Enhancements {
         }
     }
 
+    /// Parses an `Enhancements` structure from a string (in the form of a list of rules).
     pub fn parse(input: &str, cache: &mut Cache) -> anyhow::Result<Self> {
         let mut all_rules = vec![];
 
@@ -65,6 +89,7 @@ impl Enhancements {
         Ok(Enhancements::new(all_rules))
     }
 
+    /// Parses an `Enhancements` structure from the msgpack representation.
     pub fn from_config_structure(input: &[u8], cache: &mut Cache) -> anyhow::Result<Self> {
         let EncodedEnhancements(version, _bases, rules) = rmp_serde::from_slice(input)?;
 
@@ -92,6 +117,8 @@ impl Enhancements {
         Ok(Enhancements::new(all_rules))
     }
 
+    /// Matches `frames` and `exception_data` against all rules in this collection
+    /// and applies the corresponding modifications if a frame matches a rule.
     pub fn apply_modifications_to_frames(
         &self,
         frames: &mut [Frame],
@@ -114,6 +141,7 @@ impl Enhancements {
         }
     }
 
+    /// Updates contribution metadata in `components` based on the rules in this collection.
     pub fn update_frame_components_contributions(
         &self,
         components: &mut [Component],
@@ -144,6 +172,7 @@ impl Enhancements {
                 }
             }
         }
+
         // Use the stack state to update frame contributions again to trim
         // down to max-frames.  min-frames is handled on the other hand for
         // the entire stacktrace later.
@@ -188,10 +217,12 @@ impl Enhancements {
         stacktrace_state
     }
 
+    /// Returns an iterator over all rules in this collection.
     pub fn rules(&self) -> impl Iterator<Item = &Rule> {
         self.all_rules.iter()
     }
 
+    /// Adds all rules contained in `other` to `self`.
     pub fn extend_from(&mut self, other: &Enhancements) {
         self.extend(other.rules().cloned())
     }
