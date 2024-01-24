@@ -1,3 +1,6 @@
+//! Enhancement rules, which can match frames and exceptions according to the matchers they contain
+//! and perform actions on matching frames.
+
 use std::fmt;
 use std::sync::Arc;
 
@@ -11,9 +14,13 @@ use super::{Component, ExceptionData, StacktraceState};
 pub struct Rule(pub(crate) Arc<RuleInner>);
 
 #[derive(Debug, Clone)]
+/// The inner value of a [`Rule`], containing its matchers and actions.
 pub struct RuleInner {
+    /// The rule's frame matchers.
     pub frame_matchers: Vec<FrameMatcher>,
+    /// The rule's exception matchers.
     pub exception_matchers: Vec<ExceptionMatcher>,
+    /// The rule's actions.
     pub actions: Vec<Action>,
 }
 
@@ -49,6 +56,9 @@ impl fmt::Display for Rule {
 }
 
 impl Rule {
+    /// Creates a `Rule` from a vector of [`Matchers`](Matcher) and a vector of [`Actions`](Action).
+    ///
+    /// The matchers are internally sorted into exception and frame matchers.
     pub(crate) fn new(matchers: Vec<Matcher>, actions: Vec<Action>) -> Self {
         let (mut frame_matchers, mut exception_matchers) = (Vec::new(), Vec::new());
 
@@ -66,7 +76,7 @@ impl Rule {
         }))
     }
 
-    /// Checks whether an exception matches this rule.
+    /// Checks whether an exception matches this rule, i.e., if it matches all exception matchers.
     pub fn matches_exception(&self, exception_data: &ExceptionData) -> bool {
         self.0
             .exception_matchers
@@ -74,7 +84,7 @@ impl Rule {
             .all(|m| m.matches_exception(exception_data))
     }
 
-    /// Checks whether the frame at `frames[idx]` matches this rule.
+    /// Checks whether the frame at `frames[idx]` matches this rule, i.e., if it matches all frame matchers.
     pub fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
         self.0
             .frame_matchers
@@ -82,28 +92,31 @@ impl Rule {
             .all(|m| m.matches_frame(frames, idx))
     }
 
-    /// Returns true if this rule contains any actions that may modify a stacktrace.
+    /// Returns true if this rule contains any actions that may modify the contents of frames.
     pub fn has_modifier_action(&self) -> bool {
         self.0.actions.iter().any(|a| a.is_modifier())
     }
 
+    /// Returns true if this rule contains any actions that may update grouping contribution information.
     pub fn has_updater_action(&self) -> bool {
         self.0.actions.iter().any(|a| a.is_updater())
     }
 
+    /// Modifies a [`StacktraceState`] according to the actions contained in this rule.
     pub fn modify_stacktrace_state(&self, state: &mut StacktraceState) {
         for a in &self.0.actions {
             a.modify_stacktrace_state(state, self.clone());
         }
     }
 
-    /// Applies all modifications from this rule's actions to matching frames.
+    /// Applies all modifications from this rule's actions to `frames` at the index `idx`.
     pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize) {
         for action in &self.0.actions {
             action.apply_modifications_to_frame(frames, idx, self)
         }
     }
 
+    /// Updates grouping component contribution information.
     pub fn update_frame_components_contributions(&self, components: &mut [Component], idx: usize) {
         for action in &self.0.actions {
             action.update_frame_components_contributions(components, idx, self);
