@@ -13,6 +13,7 @@ classifiers = [
 dynamic = ["version"]
 
 [tool.maturin]
+module-name = "sentry_ophio._bindings"
 manifest-path = "bindings/Cargo.toml"
 python-source = "python"
 

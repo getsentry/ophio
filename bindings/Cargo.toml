@@ -1,11 +1,11 @@
 [package]
-name = "sentry-ophio"
+name = "ophio-bindings"
 version = "0.1.0"
 publish = false
 edition = "2021"
 
 [lib]
-name = "sentry_ophio"
+name = "_bindings"
 crate-type = ["cdylib"]
 
 [dependencies]
