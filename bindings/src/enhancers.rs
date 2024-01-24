@@ -90,7 +90,7 @@ impl Enhancements {
                     path: frame.path.0,
 
                     in_app: frame.in_app,
-                    orig_in_app: frame.in_app,
+                    in_app_last_changed: None,
                 };
                 Ok(frame)
             })

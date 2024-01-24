@@ -2,7 +2,7 @@ use std::fmt;
 
 use smol_str::SmolStr;
 
-use super::families::Families;
+use super::{families::Families, Rule};
 
 pub type StringField = SmolStr;
 
@@ -16,7 +16,7 @@ pub struct Frame {
     pub path: Option<StringField>,
 
     pub in_app: Option<bool>,
-    pub orig_in_app: Option<bool>,
+    pub in_app_last_changed: Option<Rule>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -75,8 +75,6 @@ impl Frame {
                 .and_then(|s| s.as_str())
                 .map(SmolStr::new),
 
-            orig_in_app: None,
-
             package: raw_frame
                 .get("package")
                 .and_then(|s| s.as_str())
@@ -87,6 +85,7 @@ impl Frame {
                 .or(raw_frame.get("filename"))
                 .and_then(|s| s.as_str())
                 .map(|s| SmolStr::new(s.replace('\\', "/").to_lowercase())),
+            in_app_last_changed: None,
         }
     }
 }
