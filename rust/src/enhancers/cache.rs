@@ -79,7 +79,7 @@ fn translate_pattern(pat: &str, is_path_matcher: bool) -> anyhow::Result<Regex> 
     };
     let mut builder = GlobBuilder::new(&pat);
     builder.literal_separator(is_path_matcher);
-    builder.case_insensitive(true);
+    builder.case_insensitive(is_path_matcher);
     let glob = builder.build()?;
     Ok(RegexBuilder::new(glob.regex()).build()?)
 }
