@@ -6,7 +6,7 @@ See also [RFC119](https://github.com/getsentry/rfcs/pull/119) for more details.
 
 ## How to write Bindings
 
-- If you want to expose existing functionality within a `crates.io` crate:
+- If you want to expose functionality from an existing crate:
   - Write bindings for it in `bindings/`.
 - Otherwise, if this is purpose built code not intended for usage outside of Sentry:
   - Write (and test) straight Rust code in the `rust/` crate.
