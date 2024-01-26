@@ -16,7 +16,7 @@ targets:
     internalPypiRepo: getsentry/pypi
 requireNames:
   - /^sentry_ophio-.*-abi3-macosx_.*_x86_64.whl$/
-  - /^sentry_ophio-.*-abi3-macosx_.*_aarch64.whl$/
+  - /^sentry_ophio-.*-abi3-macosx_.*_arm64.whl$/
   - /^sentry_ophio-.*-abi3-manylinux_.*_x86_64.whl$/
   - /^sentry_ophio-.*-abi3-manylinux_.*_aarch64.whl$/
   - /^sentry_ophio-.*.tar.gz$/
