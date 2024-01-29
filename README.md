@@ -28,9 +28,7 @@ For this reason, one can just increment the minor version for every new release 
 - Manually trigger the [`Release workflow`](actions/workflows/release.yml)
 - This should ideally auto-approve the publish, publish to `pypi` and then uplift that to our
   internal `pypi` mirror as well.
-- If the publish fails, which it unfortunately does way too often, search for a soundproof booth
-  and scream from the top of your lungs, then go to `#z-vent` and complain loudly about
-  the broken publishes and that we can’t have nice things.
+- If the publish fails, which it unfortunately does way too often, just bump the patch version and try again.
 
 ## Repo Structure
 
