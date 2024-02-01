@@ -14,7 +14,7 @@ use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while1};
 use nom::character::complete::{anychar, char, space0};
 use nom::combinator::{all_consuming, cut, map, map_res, opt, value};
-use nom::error::{context, ErrorKind, VerboseError};
+use nom::error::{context, ErrorKind};
 use nom::multi::{many0, many1};
 use nom::sequence::{delimited, preceded, tuple};
 use nom::{Finish, IResult, Parser};
@@ -252,26 +252,4 @@ pub fn parse_rule(input: &str) -> anyhow::Result<Rule> {
             .map_err(|e| anyhow::Error::msg(dbg!(e).to_string()))?;
 
     Ok(Rule::new(matchers, actions))
-}
-
-#[cfg(test)]
-mod tests {
-    use serde_json::json;
-
-    use crate::enhancers::Frame;
-
-    use super::*;
-
-    #[test]
-    fn parse_objc_matcher() {
-        let rule = parse_rule(r#"stack.function:-[* -app"#).unwrap_err();
-
-        println!("{rule:?}");
-
-        // let frames = &[Frame::from_test(
-        //     &json!({"function": "-[UIApplication sendAction:to:from:forEvent:] "}),
-        //     "native",
-        // )];
-        // assert!(!rule.matches_frame(frames, 0));
-    }
 }
