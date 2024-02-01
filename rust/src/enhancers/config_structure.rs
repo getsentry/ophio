@@ -6,7 +6,7 @@ use smol_str::SmolStr;
 
 use super::actions::{Action, FlagAction, FlagActionType, Range, VarAction};
 use super::matchers::{FrameOffset, Matcher};
-use super::Cache;
+use super::RegexCache;
 
 /// Compact representation of an [`Enhancements`](super::Enhancements) structure.
 ///
@@ -37,7 +37,7 @@ impl<'a> EncodedMatcher<'a> {
     /// Converts the encoded matcher to a [`Matcher`].
     ///
     /// The `cache` is used to memoize the computation of regexes.
-    pub fn into_matcher(self, cache: &mut Cache) -> anyhow::Result<Matcher> {
+    pub fn into_matcher(self, regex_cache: &mut RegexCache) -> anyhow::Result<Matcher> {
         let mut def = self.0;
         let mut frame_offset = FrameOffset::None;
 
@@ -83,7 +83,7 @@ impl<'a> EncodedMatcher<'a> {
             }
         };
 
-        Matcher::new(negated, key, arg, frame_offset, cache)
+        Matcher::new(negated, key, arg, frame_offset, regex_cache)
     }
 }
 

@@ -8,172 +8,284 @@
 // - we should probably support better Error handling
 // - quoted identifiers/arguments should properly support escapes, etc
 
-use nom::branch::alt;
-use nom::bytes::complete::{tag, take_while1};
-use nom::character::complete::{anychar, char, space0};
-use nom::combinator::{all_consuming, map, map_res, opt, value};
-use nom::multi::{many0, many1};
-use nom::sequence::{delimited, preceded, tuple};
-use nom::{Finish, IResult, Parser};
-use smol_str::SmolStr;
+use anyhow::{anyhow, Context};
 
 use super::actions::{Action, FlagAction, FlagActionType, Range, VarAction};
 use super::matchers::{FrameOffset, Matcher};
 use super::rules::Rule;
-use super::Cache;
+use super::RegexCache;
 
-fn ident(input: &str) -> IResult<&str, &str> {
-    take_while1(|c: char| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-'))(input)
+const MATCHER_LOOKAHEAD: [&str; 11] = [
+    "!",
+    "a",
+    "category:",
+    "e",
+    "f",
+    "me",
+    "mo",
+    "p",
+    "s",
+    "t",
+    "va",
+];
+
+fn expect(input: &mut &str, pat: &str) -> anyhow::Result<()> {
+    *input = input
+        .strip_prefix(pat)
+        .ok_or_else(|| anyhow!("at `{input}`: expected `{pat}`"))?;
+    Ok(())
 }
 
-fn rule_bool(input: &str) -> IResult<&str, bool> {
-    alt((
-        value(true, alt((tag("1"), tag("yes"), tag("true")))),
-        value(false, alt((tag("0"), tag("no"), tag("false")))),
-    ))(input)
+fn skip_ws(input: &mut &str) {
+    *input = input.trim_start();
 }
 
-fn rule_number(input: &str) -> IResult<&str, usize> {
-    map(take_while1(|c: char| c.is_ascii_digit()), |n: &str| {
-        n.parse().unwrap()
-    })(input)
-}
-
-fn frame_matcher(frame_offset: FrameOffset) -> impl Fn(&str) -> IResult<&str, Matcher> {
-    move |input| {
-        let input = input.trim_start();
-
-        let quoted_ident = delimited(
-            char('"'),
-            take_while1(|c: char| {
-                c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | ':' | '-' | ' ')
-            }),
-            char('"'),
-        );
-        let matcher_type = alt((ident, quoted_ident));
-
-        let unquoted = take_while1(|c: char| !c.is_ascii_whitespace());
-        // TODO: escapes, etc
-        let quoted = delimited(char('"'), take_while1(|c: char| c != '"'), char('"'));
-        let argument = alt((quoted, unquoted));
-
-        let mut matcher = map_res(
-            tuple((opt(char('!')), matcher_type, char(':'), argument)),
-            |(negated, matcher_type, _, argument): (_, _, _, &str)| {
-                // TODO: support even more escapes
-                let unescaped = argument.replace("\\\\", "\\");
-                Matcher::new(
-                    negated.is_some(),
-                    matcher_type,
-                    &unescaped,
-                    frame_offset,
-                    &mut Cache::default(),
-                )
-            },
-        );
-
-        matcher(input)
+fn bool(input: &str) -> anyhow::Result<bool> {
+    match input {
+        "1" | "yes" | "true" => Ok(true),
+        "0" | "no" | "false" => Ok(false),
+        _ => anyhow::bail!("at `{input}`: invalid boolean value"),
     }
 }
 
-fn matchers(input: &str) -> IResult<&str, Vec<Matcher>> {
-    let input = input.trim_start();
+fn ident<'a>(input: &mut &'a str) -> anyhow::Result<&'a str> {
+    let Some(end) =
+        input.find(|c: char| !(c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-')))
+    else {
+        let res = *input;
+        *input = "";
+        return Ok(res);
+    };
 
-    let caller_matcher = tuple((
-        space0,
-        char('['),
-        space0,
-        frame_matcher(FrameOffset::Caller),
-        space0,
-        char(']'),
-        space0,
-        char('|'),
-    ));
-    let callee_matcher = tuple((
-        space0,
-        char('|'),
-        space0,
-        char('['),
-        space0,
-        frame_matcher(FrameOffset::Callee),
-        space0,
-        char(']'),
-    ));
-
-    let mut matchers = tuple((
-        opt(caller_matcher),
-        many1(frame_matcher(FrameOffset::None)),
-        opt(callee_matcher),
-    ));
-
-    let (input, (caller_matcher, mut matchers, callee_matcher)) = matchers(input)?;
-
-    if let Some((_, _, _, m, _, _, _, _)) = caller_matcher {
-        matchers.push(m);
+    if end == 0 {
+        anyhow::bail!("at `{input}`: invalid identifier");
     }
 
-    if let Some((_, _, _, _, _, m, _, _)) = callee_matcher {
-        matchers.push(m);
+    let (ident, rest) = input.split_at(end);
+    *input = rest;
+    Ok(ident)
+}
+
+fn argument<'a>(input: &mut &'a str) -> anyhow::Result<&'a str> {
+    if let Some(rest) = input.strip_prefix('"') {
+        let end = rest
+            .find('"')
+            .ok_or_else(|| anyhow!("at `{input}`: unclosed `\"`"))?;
+        let result = &rest[..end];
+        *input = rest.get(end + 1..).unwrap_or_default();
+        Ok(result)
+    } else {
+        match input.find(|c: char| c.is_ascii_whitespace()) {
+            None => {
+                let result = *input;
+                *input = "";
+                Ok(result)
+            }
+
+            Some(end) => {
+                let (result, rest) = input.split_at(end);
+                *input = rest;
+                Ok(result)
+            }
+        }
+    }
+}
+
+fn var_action(input: &mut &str) -> anyhow::Result<VarAction> {
+    skip_ws(input);
+
+    let starting_input = *input;
+
+    let lhs = ident(input).with_context(|| format!("at `{input}`: expected variable name"))?;
+
+    skip_ws(input);
+
+    expect(input, "=")?;
+
+    skip_ws(input);
+
+    let rhs = ident(input).with_context(|| format!("at `{input}`: expected value for variable"))?;
+
+    match lhs {
+        "max-frames" => {
+            let n = rhs
+                .parse()
+                .with_context(|| format!("at `{rhs}`: failed to parse rhs of `max-frames`"))?;
+            Ok(VarAction::MaxFrames(n))
+        }
+
+        "min-frames" => {
+            let n = rhs
+                .parse()
+                .with_context(|| format!("at `{rhs}`: failed to parse rhs of `min-frames`"))?;
+            Ok(VarAction::MinFrames(n))
+        }
+
+        "invert-stacktrace" => {
+            let b = bool(rhs).with_context(|| {
+                format!("at `{rhs}`: failed to parse rhs of `invert-stacktrace`")
+            })?;
+            Ok(VarAction::InvertStacktrace(b))
+        }
+
+        "category" => Ok(VarAction::Category(rhs.into())),
+
+        _ => Err(anyhow!(
+            "at `{starting_input}`: invalid variable name `{lhs}`"
+        )),
+    }
+}
+
+fn flag_action(input: &mut &str) -> anyhow::Result<FlagAction> {
+    skip_ws(input);
+
+    let range = if let Some(rest) = input.strip_prefix('^') {
+        *input = rest;
+        Some(Range::Up)
+    } else if let Some(rest) = input.strip_prefix('v') {
+        *input = rest;
+        Some(Range::Down)
+    } else {
+        None
+    };
+
+    let flag = if let Some(rest) = input.strip_prefix('+') {
+        *input = rest;
+        true
+    } else if let Some(rest) = input.strip_prefix('-') {
+        *input = rest;
+        false
+    } else {
+        anyhow::bail!("at `{input}`: expected flag value");
+    };
+
+    let before_name = *input;
+    let name = ident(input).with_context(|| format!("at `{input}`: expected flag name"))?;
+
+    let ty = match name {
+        "app" => FlagActionType::App,
+        "group" => FlagActionType::Group,
+        "prefix" => FlagActionType::Prefix,
+        "sentinel" => FlagActionType::Sentinel,
+        _ => anyhow::bail!("at `{before_name}`: invalid flag name `{name}`"),
+    };
+
+    Ok(FlagAction { flag, ty, range })
+}
+
+fn actions(input: &mut &str) -> anyhow::Result<Vec<Action>> {
+    let mut result = Vec::new();
+    skip_ws(input);
+
+    while !input.is_empty() && !input.starts_with('#') {
+        let starting_input = *input;
+
+        if input.starts_with(['v', '^', '+', '-']) {
+            let action = flag_action(input)
+                .with_context(|| format!("at `{starting_input}`: failed to parse flag action"))?;
+            result.push(Action::Flag(action));
+        } else {
+            let action = var_action(input)
+                .with_context(|| format!("at `{starting_input}`: failed to parse var action"))?;
+            result.push(Action::Var(action));
+        }
+
+        skip_ws(input);
     }
 
-    Ok((input, matchers))
+    if result.is_empty() {
+        anyhow::bail!("expected at least one action");
+    }
+
+    Ok(result)
 }
 
-fn actions(input: &str) -> IResult<&str, Vec<Action>> {
-    let max_frames = preceded(
-        tuple((tag("max-frames"), space0, char('='), space0)),
-        rule_number,
-    )
-    .map(VarAction::MaxFrames);
+fn matcher(
+    input: &mut &str,
+    frame_offset: FrameOffset,
+    regex_cache: &mut RegexCache,
+) -> anyhow::Result<Matcher> {
+    skip_ws(input);
 
-    let min_frames = preceded(
-        tuple((tag("min-frames"), space0, char('='), space0)),
-        rule_number,
-    )
-    .map(VarAction::MinFrames);
+    let negated = if let Some(rest) = input.strip_prefix('!') {
+        *input = rest;
+        true
+    } else {
+        false
+    };
 
-    let invert_stacktrace = preceded(
-        tuple((tag("invert-stacktrace"), space0, char('='), space0)),
-        rule_bool,
-    )
-    .map(VarAction::InvertStacktrace);
+    let name =
+        ident(input).with_context(|| format!("at `{input}`: failed to parse matcher name"))?;
 
-    let category = preceded(tuple((tag("category"), space0, char('='), space0)), ident)
-        .map(|c| VarAction::Category(SmolStr::new(c)));
+    expect(input, ":")?;
 
-    let var_action = alt((max_frames, min_frames, invert_stacktrace, category));
+    let arg = argument(input)
+        .with_context(|| format!("at `{input}`: failed to parse matcher argument"))?;
 
-    let flag_name = alt((
-        value(FlagActionType::Group, tag("group")),
-        value(FlagActionType::App, tag("app")),
-        value(FlagActionType::Prefix, tag("prefix")),
-        value(FlagActionType::Sentinel, tag("sentinel")),
-    ));
-    let range = opt(alt((
-        value(Range::Up, char('^')),
-        value(Range::Down, char('v')),
-    )));
-    let flag = alt((value(true, char('+')), value(false, char('-'))));
-    let flag_action =
-        tuple((range, flag, flag_name)).map(|(range, flag, ty)| FlagAction { range, flag, ty });
-
-    let action = preceded(
-        space0,
-        alt((map(flag_action, Action::Flag), map(var_action, Action::Var))),
-    );
-
-    let (input, actions) = many1(action)(input)?;
-
-    Ok((input, actions))
+    // TODO: support even more escapes
+    let unescaped = arg.replace("\\\\", "\\");
+    Matcher::new(negated, name, &unescaped, frame_offset, regex_cache)
 }
 
-/// Parses a [`Rule`] from its string representation.
-pub fn parse_rule(input: &str) -> anyhow::Result<Rule> {
-    let comment = tuple((space0, char('#'), many0(anychar)));
-    let (_input, (matchers, actions, _)) =
-        all_consuming(tuple((matchers, actions, opt(comment))))(input)
-            .finish()
-            .map_err(|e| anyhow::Error::msg(e.to_string()))?;
+fn matchers(input: &mut &str, regex_cache: &mut RegexCache) -> anyhow::Result<Vec<Matcher>> {
+    let mut result = Vec::new();
+    skip_ws(input);
+
+    if let Some(rest) = input.strip_prefix('[') {
+        *input = rest;
+        let caller_matcher = matcher(input, FrameOffset::Caller, regex_cache)
+            .with_context(|| format!("at `{rest}`: failed to parse caller matcher"))?;
+        skip_ws(input);
+        dbg!(&input);
+        expect(input, "]")
+            .with_context(|| format!("at `{input}`: failed to parse caller matcher"))?;
+        dbg!(&input);
+        skip_ws(input);
+        expect(input, "|")
+            .with_context(|| format!("at `{input}`: failed to parse caller matcher"))?;
+        dbg!(&input);
+
+        result.push(caller_matcher);
+    }
+
+    let mut parsed = false;
+
+    skip_ws(input);
+    while MATCHER_LOOKAHEAD
+        .iter()
+        .any(|prefix| input.starts_with(prefix))
+    {
+        let starting_input = *input;
+        let m = matcher(input, FrameOffset::None, regex_cache)
+            .with_context(|| format!("at `{starting_input}`: failed to parse matcher"))?;
+        result.push(m);
+        skip_ws(input);
+        parsed = true;
+    }
+
+    if !parsed {
+        anyhow::bail!("at `{input}`: expected at least one matcher");
+    }
+
+    if let Some(rest) = input.strip_prefix('|') {
+        *input = rest.trim_start();
+        expect(input, "[")
+            .with_context(|| format!("at `{input}`: failed to parse callee matcher"))?;
+        let callee_matcher = matcher(input, FrameOffset::Callee, regex_cache)
+            .with_context(|| format!("at `{input}`: failed to parse callee matcher"))?;
+        skip_ws(input);
+        expect(input, "]")
+            .with_context(|| format!("at `{input}`: failed to parse callee matcher"))?;
+
+        result.push(callee_matcher);
+    }
+
+    Ok(result)
+}
+
+pub fn parse_rule(mut input: &str, regex_cache: &mut RegexCache) -> anyhow::Result<Rule> {
+    let matchers = matchers(&mut input, regex_cache)?;
+    let actions = actions(&mut input)?;
 
     Ok(Rule::new(matchers, actions))
 }
@@ -189,7 +301,7 @@ mod tests {
 
     #[test]
     fn parse_objc_matcher() {
-        let rule = parse_rule("stack.function:-[* -app").unwrap();
+        let rule = parse_rule("stack.function:-[* -app", &mut RegexCache::default()).unwrap();
 
         let frames = &[Frame::from_test(
             &json!({"function": "-[UIApplication sendAction:to:from:forEvent:] "}),
@@ -206,12 +318,16 @@ mod tests {
             Matcher::Exception(_) => unreachable!(),
         }
 
-        let _rule = parse_rule("stack.module:[foo:bar/* -app").unwrap();
+        let _rule = parse_rule("stack.module:[foo:bar/* -app", &mut Default::default()).unwrap();
     }
 
     #[test]
     fn invalid_app_matcher() {
-        let rule = parse_rule("app://../../src/some-file.ts -group -app").unwrap();
+        let rule = parse_rule(
+            "app://../../src/some-file.ts -group -app",
+            &mut Default::default(),
+        )
+        .unwrap();
 
         let frames = &[
             Frame::from_test(&json!({}), "native"),

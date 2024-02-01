@@ -9,48 +9,22 @@ use smol_str::SmolStr;
 
 use super::{grammar::parse_rule, rules::Rule};
 
-/// An LRU cache for memoizing the construction of [`Rules`](Rule) and [`Regexes`](Regex).
 #[derive(Debug, Default)]
-pub struct Cache {
-    rules: Option<LruCache<SmolStr, Rule>>,
-    regex: Option<LruCache<(SmolStr, bool), Arc<Regex>>>,
-}
+pub struct RegexCache(Option<LruCache<(SmolStr, bool), Arc<Regex>>>);
 
-impl Cache {
+impl RegexCache {
     /// Creates a new cache with the given size.
     ///
     /// If `size` is 0, no caching will be performed.
     pub fn new(size: usize) -> Self {
-        let rules = size.try_into().ok().map(LruCache::new);
         let regex = size.try_into().ok().map(LruCache::new);
-        Self { rules, regex }
-    }
-
-    /// Gets the rule for the string `key` from the cache or parses and inserts
-    /// it using `parse_rule` if it is not present.
-    pub fn get_or_try_insert_rule(&mut self, key: &str) -> anyhow::Result<Rule> {
-        match self.rules.as_mut() {
-            Some(cache) => {
-                if let Some(rule) = cache.get(key) {
-                    return Ok(rule.clone());
-                }
-
-                let rule = parse_rule(key)?;
-                cache.put(key.into(), rule.clone());
-                Ok(rule)
-            }
-            None => parse_rule(key),
-        }
+        Self(regex)
     }
 
     /// Gets the regex for the string `key` and the boolean `is_path` from the cache or computes and inserts
     /// it using `translate_pattern` if it is not present.
-    pub fn get_or_try_insert_regex(
-        &mut self,
-        key: &str,
-        is_path: bool,
-    ) -> anyhow::Result<Arc<Regex>> {
-        match self.regex.as_mut() {
+    pub fn get_or_try_insert(&mut self, key: &str, is_path: bool) -> anyhow::Result<Arc<Regex>> {
+        match self.0.as_mut() {
             Some(cache) => {
                 let key = (key.into(), is_path);
                 if let Some(regex) = cache.get(&key) {
@@ -63,6 +37,74 @@ impl Cache {
             }
             None => translate_pattern(key, is_path).map(Arc::new),
         }
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct RulesCache(Option<LruCache<SmolStr, Rule>>);
+
+impl RulesCache {
+    /// Creates a new cache with the given size.
+    ///
+    /// If `size` is 0, no caching will be performed.
+    pub fn new(size: usize) -> Self {
+        let rules = size.try_into().ok().map(LruCache::new);
+        Self(rules)
+    }
+
+    /// Gets the rule for the string `key` from the cache or parses and inserts
+    /// it using `parse_rule` if it is not present.
+    pub fn get_or_try_insert(
+        &mut self,
+        key: &str,
+        regex_cache: &mut RegexCache,
+    ) -> anyhow::Result<Rule> {
+        match self.0.as_mut() {
+            Some(cache) => {
+                if let Some(rule) = cache.get(key) {
+                    return Ok(rule.clone());
+                }
+
+                let rule = parse_rule(key, regex_cache)?;
+                cache.put(key.into(), rule.clone());
+                Ok(rule)
+            }
+            None => parse_rule(key, regex_cache),
+        }
+    }
+}
+
+/// An LRU cache for memoizing the construction of [`Rules`](Rule) and [`Regexes`](Regex).
+#[derive(Debug, Default)]
+pub struct Cache {
+    pub rules: RulesCache,
+    pub regex: RegexCache,
+}
+
+impl Cache {
+    /// Creates a new cache with the given size.
+    ///
+    /// If `size` is 0, no caching will be performed.
+    pub fn new(size: usize) -> Self {
+        let rules = RulesCache::new(size);
+        let regex = RegexCache::new(size);
+        Self { rules, regex }
+    }
+
+    /// Gets the rule for the string `key` from the cache or parses and inserts
+    /// it using `parse_rule` if it is not present.
+    pub fn get_or_try_insert_rule(&mut self, key: &str) -> anyhow::Result<Rule> {
+        self.rules.get_or_try_insert(key, &mut self.regex)
+    }
+
+    /// Gets the regex for the string `key` and the boolean `is_path` from the cache or computes and inserts
+    /// it using `translate_pattern` if it is not present.
+    pub fn get_or_try_insert_regex(
+        &mut self,
+        key: &str,
+        is_path: bool,
+    ) -> anyhow::Result<Arc<Regex>> {
+        self.regex.get_or_try_insert(key, is_path)
     }
 }
 
