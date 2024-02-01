@@ -29,15 +29,10 @@ const MATCHER_LOOKAHEAD: [&str; 11] = [
     "va",
 ];
 
-fn expect(input: &mut &str, pat: &str) -> anyhow::Result<()> {
-    *input = input
+fn expect<'a>(input: &'a str, pat: &str) -> anyhow::Result<&'a str> {
+    input
         .strip_prefix(pat)
-        .ok_or_else(|| anyhow!("at `{input}`: expected `{pat}`"))?;
-    Ok(())
-}
-
-fn skip_ws(input: &mut &str) {
-    *input = input.trim_start();
+        .ok_or_else(|| anyhow!("at `{input}`: expected `{pat}`"))
 }
 
 fn bool(input: &str) -> anyhow::Result<bool> {
@@ -48,149 +43,131 @@ fn bool(input: &str) -> anyhow::Result<bool> {
     }
 }
 
-fn ident<'a>(input: &mut &'a str) -> anyhow::Result<&'a str> {
+fn ident(input: &str) -> anyhow::Result<(&str, &str)> {
     let Some(end) =
         input.find(|c: char| !(c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-')))
     else {
-        let res = *input;
-        *input = "";
-        return Ok(res);
+        return Ok((input, ""));
     };
 
     if end == 0 {
         anyhow::bail!("at `{input}`: invalid identifier");
     }
 
-    let (ident, rest) = input.split_at(end);
-    *input = rest;
-    Ok(ident)
+    Ok(input.split_at(end))
 }
 
-fn argument<'a>(input: &mut &'a str) -> anyhow::Result<&'a str> {
+fn argument(input: &str) -> anyhow::Result<(&str, &str)> {
     if let Some(rest) = input.strip_prefix('"') {
         let end = rest
             .find('"')
             .ok_or_else(|| anyhow!("at `{input}`: unclosed `\"`"))?;
         let result = &rest[..end];
-        *input = rest.get(end + 1..).unwrap_or_default();
-        Ok(result)
+        let rest = rest.get(end + 1..).unwrap_or_default();
+        Ok((result, rest))
     } else {
         match input.find(|c: char| c.is_ascii_whitespace()) {
-            None => {
-                let result = *input;
-                *input = "";
-                Ok(result)
-            }
-
-            Some(end) => {
-                let (result, rest) = input.split_at(end);
-                *input = rest;
-                Ok(result)
-            }
+            None => Ok((input, "")),
+            Some(end) => Ok(input.split_at(end)),
         }
     }
 }
 
-fn var_action(input: &mut &str) -> anyhow::Result<VarAction> {
-    skip_ws(input);
+fn var_action(input: &str) -> anyhow::Result<(VarAction, &str)> {
+    let input = input.trim_start();
 
-    let starting_input = *input;
+    let (lhs, after_lhs) =
+        ident(input).with_context(|| format!("at `{input}`: expected variable name"))?;
 
-    let lhs = ident(input).with_context(|| format!("at `{input}`: expected variable name"))?;
+    let after_lhs = after_lhs.trim_start();
 
-    skip_ws(input);
+    let after_eq = expect(after_lhs, "=")?.trim_start();
 
-    expect(input, "=")?;
+    let (rhs, rest) =
+        ident(after_eq).with_context(|| format!("at `{after_eq}`: expected value for variable"))?;
 
-    skip_ws(input);
-
-    let rhs = ident(input).with_context(|| format!("at `{input}`: expected value for variable"))?;
-
-    match lhs {
+    let a = match lhs {
         "max-frames" => {
             let n = rhs
                 .parse()
                 .with_context(|| format!("at `{rhs}`: failed to parse rhs of `max-frames`"))?;
-            Ok(VarAction::MaxFrames(n))
+            VarAction::MaxFrames(n)
         }
 
         "min-frames" => {
             let n = rhs
                 .parse()
                 .with_context(|| format!("at `{rhs}`: failed to parse rhs of `min-frames`"))?;
-            Ok(VarAction::MinFrames(n))
+            VarAction::MinFrames(n)
         }
 
         "invert-stacktrace" => {
             let b = bool(rhs).with_context(|| {
                 format!("at `{rhs}`: failed to parse rhs of `invert-stacktrace`")
             })?;
-            Ok(VarAction::InvertStacktrace(b))
+            VarAction::InvertStacktrace(b)
         }
 
-        "category" => Ok(VarAction::Category(rhs.into())),
+        "category" => VarAction::Category(rhs.into()),
 
-        _ => Err(anyhow!(
-            "at `{starting_input}`: invalid variable name `{lhs}`"
-        )),
-    }
-}
-
-fn flag_action(input: &mut &str) -> anyhow::Result<FlagAction> {
-    skip_ws(input);
-
-    let range = if let Some(rest) = input.strip_prefix('^') {
-        *input = rest;
-        Some(Range::Up)
-    } else if let Some(rest) = input.strip_prefix('v') {
-        *input = rest;
-        Some(Range::Down)
-    } else {
-        None
+        _ => anyhow::bail!("at `{input}`: invalid variable name `{lhs}`"),
     };
 
-    let flag = if let Some(rest) = input.strip_prefix('+') {
-        *input = rest;
-        true
-    } else if let Some(rest) = input.strip_prefix('-') {
-        *input = rest;
-        false
+    Ok((a, rest))
+}
+
+fn flag_action(input: &str) -> anyhow::Result<(FlagAction, &str)> {
+    let input = input.trim_start();
+
+    let (range, after_range) = if let Some(rest) = input.strip_prefix('^') {
+        (Some(Range::Up), rest)
+    } else if let Some(rest) = input.strip_prefix('v') {
+        (Some(Range::Up), rest)
+    } else {
+        (None, input)
+    };
+
+    let (flag, after_flag) = if let Some(rest) = after_range.strip_prefix('+') {
+        (true, rest)
+    } else if let Some(rest) = after_range.strip_prefix('-') {
+        (false, rest)
     } else {
         anyhow::bail!("at `{input}`: expected flag value");
     };
 
-    let before_name = *input;
-    let name = ident(input).with_context(|| format!("at `{input}`: expected flag name"))?;
+    let (name, rest) =
+        ident(after_flag).with_context(|| format!("at `{after_flag}`: expected flag name"))?;
 
     let ty = match name {
         "app" => FlagActionType::App,
         "group" => FlagActionType::Group,
         "prefix" => FlagActionType::Prefix,
         "sentinel" => FlagActionType::Sentinel,
-        _ => anyhow::bail!("at `{before_name}`: invalid flag name `{name}`"),
+        _ => anyhow::bail!("at `{after_flag}`: invalid flag name `{name}`"),
     };
 
-    Ok(FlagAction { flag, ty, range })
+    Ok((FlagAction { flag, ty, range }, rest))
 }
 
-fn actions(input: &mut &str) -> anyhow::Result<Vec<Action>> {
+fn actions(input: &str) -> anyhow::Result<Vec<Action>> {
+    let mut input = input.trim_start();
+
     let mut result = Vec::new();
-    skip_ws(input);
 
     while !input.is_empty() && !input.starts_with('#') {
-        let starting_input = *input;
-
         if input.starts_with(['v', '^', '+', '-']) {
-            let action = flag_action(input)
-                .with_context(|| format!("at `{starting_input}`: failed to parse flag action"))?;
-            result.push(Action::Flag(action));
-        } else {
-            let action = var_action(input)
-                .with_context(|| format!("at `{starting_input}`: failed to parse var action"))?;
-            result.push(Action::Var(action));
-        }
+            let (action, after_action) = flag_action(input)
+                .with_context(|| format!("at `{input}`: failed to parse flag action"))?;
 
-        skip_ws(input);
+            result.push(Action::Flag(action));
+            input = after_action.trim_start();
+        } else {
+            let (action, after_action) = var_action(input)
+                .with_context(|| format!("at `{input}`: failed to parse var action"))?;
+
+            result.push(Action::Var(action));
+            input = after_action.trim_start();
+        }
     }
 
     if result.is_empty() {
@@ -200,66 +177,68 @@ fn actions(input: &mut &str) -> anyhow::Result<Vec<Action>> {
     Ok(result)
 }
 
-fn matcher(
-    input: &mut &str,
+fn matcher<'a>(
+    input: &'a str,
     frame_offset: FrameOffset,
     regex_cache: &mut RegexCache,
-) -> anyhow::Result<Matcher> {
-    skip_ws(input);
+) -> anyhow::Result<(Matcher, &'a str)> {
+    let input = input.trim_start();
 
-    let negated = if let Some(rest) = input.strip_prefix('!') {
-        *input = rest;
-        true
+    let (negated, before_name) = if let Some(rest) = input.strip_prefix('!') {
+        (true, rest)
     } else {
-        false
+        (false, input)
     };
 
-    let name =
-        ident(input).with_context(|| format!("at `{input}`: failed to parse matcher name"))?;
+    let (name, after_name) = ident(before_name)
+        .with_context(|| format!("at `{before_name}`: failed to parse matcher name"))?;
 
-    expect(input, ":")?;
+    let before_arg = expect(after_name, ":")?;
 
-    let arg = argument(input)
-        .with_context(|| format!("at `{input}`: failed to parse matcher argument"))?;
+    let (arg, rest) = argument(before_arg)
+        .with_context(|| format!("at `{before_arg}`: failed to parse matcher argument"))?;
 
     // TODO: support even more escapes
     let unescaped = arg.replace("\\\\", "\\");
-    Matcher::new(negated, name, &unescaped, frame_offset, regex_cache)
+    let m = Matcher::new(negated, name, &unescaped, frame_offset, regex_cache)?;
+    Ok((m, rest))
 }
 
-fn matchers(input: &mut &str, regex_cache: &mut RegexCache) -> anyhow::Result<Vec<Matcher>> {
-    let mut result = Vec::new();
-    skip_ws(input);
+fn matchers<'a>(
+    input: &'a str,
+    regex_cache: &mut RegexCache,
+) -> anyhow::Result<(Vec<Matcher>, &'a str)> {
+    let input = input.trim_start();
 
-    if let Some(rest) = input.strip_prefix('[') {
-        *input = rest;
-        let caller_matcher = matcher(input, FrameOffset::Caller, regex_cache)
+    let mut result = Vec::new();
+
+    let mut input = if let Some(rest) = input.strip_prefix('[') {
+        let (caller_matcher, rest) = matcher(rest, FrameOffset::Caller, regex_cache)
             .with_context(|| format!("at `{rest}`: failed to parse caller matcher"))?;
-        skip_ws(input);
-        dbg!(&input);
-        expect(input, "]")
-            .with_context(|| format!("at `{input}`: failed to parse caller matcher"))?;
-        dbg!(&input);
-        skip_ws(input);
-        expect(input, "|")
-            .with_context(|| format!("at `{input}`: failed to parse caller matcher"))?;
-        dbg!(&input);
+        let rest = rest.trim_start();
+        let rest = expect(rest, "]")
+            .with_context(|| format!("at `{rest}`: failed to parse caller matcher"))?;
+        let rest = rest.trim_start();
+        let rest = expect(rest, "|")
+            .with_context(|| format!("at `{rest}`: failed to parse caller matcher"))?;
 
         result.push(caller_matcher);
-    }
+
+        rest.trim_start()
+    } else {
+        input
+    };
 
     let mut parsed = false;
 
-    skip_ws(input);
     while MATCHER_LOOKAHEAD
         .iter()
         .any(|prefix| input.starts_with(prefix))
     {
-        let starting_input = *input;
-        let m = matcher(input, FrameOffset::None, regex_cache)
-            .with_context(|| format!("at `{starting_input}`: failed to parse matcher"))?;
+        let (m, rest) = matcher(input, FrameOffset::None, regex_cache)
+            .with_context(|| format!("at `{input}`: failed to parse matcher"))?;
         result.push(m);
-        skip_ws(input);
+        input = rest.trim_start();
         parsed = true;
     }
 
@@ -267,25 +246,28 @@ fn matchers(input: &mut &str, regex_cache: &mut RegexCache) -> anyhow::Result<Ve
         anyhow::bail!("at `{input}`: expected at least one matcher");
     }
 
-    if let Some(rest) = input.strip_prefix('|') {
-        *input = rest.trim_start();
-        expect(input, "[")
-            .with_context(|| format!("at `{input}`: failed to parse callee matcher"))?;
-        let callee_matcher = matcher(input, FrameOffset::Callee, regex_cache)
-            .with_context(|| format!("at `{input}`: failed to parse callee matcher"))?;
-        skip_ws(input);
-        expect(input, "]")
-            .with_context(|| format!("at `{input}`: failed to parse callee matcher"))?;
+    let rest = if let Some(rest) = input.strip_prefix('|') {
+        let rest = rest.trim_start();
+        let rest = expect(rest, "[")
+            .with_context(|| format!("at `{rest}`: failed to parse callee matcher"))?;
+        let (callee_matcher, rest) = matcher(rest, FrameOffset::Callee, regex_cache)
+            .with_context(|| format!("at `{rest}`: failed to parse callee matcher"))?;
+        let rest = rest.trim_start();
+        let rest = expect(rest, "]")
+            .with_context(|| format!("at `{rest}`: failed to parse callee matcher"))?;
 
         result.push(callee_matcher);
-    }
+        rest
+    } else {
+        input
+    };
 
-    Ok(result)
+    Ok((result, rest))
 }
 
-pub fn parse_rule(mut input: &str, regex_cache: &mut RegexCache) -> anyhow::Result<Rule> {
-    let matchers = matchers(&mut input, regex_cache)?;
-    let actions = actions(&mut input)?;
+pub fn parse_rule(input: &str, regex_cache: &mut RegexCache) -> anyhow::Result<Rule> {
+    let (matchers, after_matchers) = matchers(input, regex_cache)?;
+    let actions = actions(after_matchers)?;
 
     Ok(Rule::new(matchers, actions))
 }
