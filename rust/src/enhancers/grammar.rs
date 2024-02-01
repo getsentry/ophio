@@ -182,6 +182,7 @@ pub fn parse_rule(input: &str) -> anyhow::Result<Rule> {
 mod tests {
     use serde_json::json;
 
+    use crate::enhancers::config_structure::EncodedMatcher;
     use crate::enhancers::Frame;
 
     use super::*;
@@ -195,5 +196,14 @@ mod tests {
             "native",
         )];
         assert!(!rule.matches_frame(frames, 0));
+
+        let matcher: EncodedMatcher = serde_json::from_str(r#""f-[*""#).unwrap();
+        let matcher = matcher.into_matcher(&mut Default::default()).unwrap();
+        match matcher {
+            Matcher::Frame(frame) => {
+                assert!(!frame.matches_frame(frames, 0));
+            }
+            Matcher::Exception(_) => unreachable!(),
+        }
     }
 }
