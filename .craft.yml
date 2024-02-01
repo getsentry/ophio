@@ -14,6 +14,7 @@ targets:
   - name: pypi
   - name: sentry-pypi
     internalPypiRepo: getsentry/pypi
+  - name: github
 requireNames:
   - /^sentry_ophio-.*-abi3-macosx_.*_x86_64.whl$/
   - /^sentry_ophio-.*-abi3-macosx_.*_arm64.whl$/
