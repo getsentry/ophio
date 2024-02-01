@@ -177,3 +177,23 @@ pub fn parse_rule(input: &str) -> anyhow::Result<Rule> {
 
     Ok(Rule::new(matchers, actions))
 }
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use crate::enhancers::Frame;
+
+    use super::*;
+
+    #[test]
+    fn parse_objc_matcher() {
+        let rule = parse_rule("stack.function:-[* -app").unwrap();
+
+        let frames = &[Frame::from_test(
+            &json!({"function": "-[UIApplication sendAction:to:from:forEvent:] "}),
+            "native",
+        )];
+        assert!(!rule.matches_frame(frames, 0));
+    }
+}

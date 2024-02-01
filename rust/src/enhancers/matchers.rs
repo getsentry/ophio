@@ -236,6 +236,11 @@ enum FrameMatcherInner {
     Family { families: Families },
     /// Checks whether a frame's in_app field is equal to an expected value.
     InApp { expected: bool },
+    /// A matcher that will never match.
+    Noop {
+        /// The field to check.
+        field: FrameField,
+    },
 }
 
 impl FrameMatcherInner {
@@ -246,7 +251,10 @@ impl FrameMatcherInner {
         pattern: &str,
         cache: &mut Cache,
     ) -> anyhow::Result<Self> {
-        let pattern = cache.get_or_try_insert_regex(pattern, path_like)?;
+        let Ok(pattern) = cache.get_or_try_insert_regex(pattern, path_like) else {
+            return Ok(Self::Noop { field });
+        };
+
         Ok(Self::Field {
             field,
             path_like,
@@ -295,6 +303,7 @@ impl FrameMatcherInner {
             }
             FrameMatcherInner::Family { families } => families.matches(frame.family),
             FrameMatcherInner::InApp { expected } => frame.in_app.unwrap_or_default() == *expected,
+            FrameMatcherInner::Noop { .. } => false,
         }
     }
 }
@@ -302,7 +311,9 @@ impl FrameMatcherInner {
 impl fmt::Display for FrameMatcherInner {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            FrameMatcherInner::Field { field, .. } => write!(f, "{field}"),
+            FrameMatcherInner::Field { field, .. } | FrameMatcherInner::Noop { field } => {
+                write!(f, "{field}")
+            }
             FrameMatcherInner::Family { .. } => write!(f, "family"),
             FrameMatcherInner::InApp { .. } => write!(f, "app"),
         }
