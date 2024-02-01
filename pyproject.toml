@@ -4,11 +4,12 @@ build-backend = "maturin"
 
 [project]
 name = "sentry_ophio"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
 classifiers = [
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
-    "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dynamic = ["version"]
 
