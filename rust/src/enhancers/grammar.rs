@@ -266,8 +266,10 @@ fn matchers<'a>(
 }
 
 pub fn parse_rule(input: &str, regex_cache: &mut RegexCache) -> anyhow::Result<Rule> {
-    let (matchers, after_matchers) = matchers(input, regex_cache)?;
-    let actions = actions(after_matchers)?;
+    let (matchers, after_matchers) = matchers(input, regex_cache)
+        .with_context(|| format!("at `{input}`: failed to parse matchers"))?;
+    let actions = actions(after_matchers)
+        .with_context(|| format!("at `{after_matchers}`: failed to parse actions"))?;
 
     Ok(Rule::new(matchers, actions))
 }
