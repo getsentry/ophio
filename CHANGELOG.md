@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5
+
+### Various fixes & improvements
+
+- Silently accept invalid `app` matcher (#41) by @Swatinem
+
 ## 0.1.4
 
 ### Various fixes & improvements
