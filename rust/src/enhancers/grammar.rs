@@ -8,6 +8,8 @@
 // - we should probably support better Error handling
 // - quoted identifiers/arguments should properly support escapes, etc
 
+use std::borrow::Cow;
+
 use anyhow::{anyhow, Context};
 
 use super::actions::{Action, FlagAction, FlagActionType, Range, VarAction};
@@ -57,20 +59,29 @@ fn ident(input: &str) -> anyhow::Result<(&str, &str)> {
     Ok(input.split_at(end))
 }
 
-fn argument(input: &str) -> anyhow::Result<(&str, &str)> {
-    if let Some(rest) = input.strip_prefix('"') {
+fn argument(input: &str) -> anyhow::Result<(Cow<str>, &str)> {
+    let (result, rest) = if let Some(rest) = input.strip_prefix('"') {
         let end = rest
             .find('"')
             .ok_or_else(|| anyhow!("at `{input}`: unclosed `\"`"))?;
         let result = &rest[..end];
-        let rest = rest.get(end + 1..).unwrap_or_default();
-        Ok((result, rest))
+        let rest = &rest[end + 1..];
+        (result, rest)
     } else {
         match input.find(|c: char| c.is_ascii_whitespace()) {
-            None => Ok((input, "")),
-            Some(end) => Ok(input.split_at(end)),
+            None => (input, ""),
+            Some(end) => input.split_at(end),
         }
-    }
+    };
+
+    // TODO: support even more escapes
+    let unescaped = if result.contains("\\\\") {
+        result.replace("\\\\", "\\").into()
+    } else {
+        result.into()
+    };
+
+    Ok((unescaped, rest))
 }
 
 fn var_action(input: &str) -> anyhow::Result<(VarAction, &str)> {
@@ -198,9 +209,7 @@ fn matcher<'a>(
     let (arg, rest) = argument(before_arg)
         .with_context(|| format!("at `{before_arg}`: failed to parse matcher argument"))?;
 
-    // TODO: support even more escapes
-    let unescaped = arg.replace("\\\\", "\\");
-    let m = Matcher::new(negated, name, &unescaped, frame_offset, regex_cache)?;
+    let m = Matcher::new(negated, name, &arg, frame_offset, regex_cache)?;
     Ok((m, rest))
 }
 
