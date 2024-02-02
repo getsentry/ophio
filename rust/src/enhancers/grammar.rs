@@ -205,5 +205,21 @@ mod tests {
             }
             Matcher::Exception(_) => unreachable!(),
         }
+
+        let _rule = parse_rule("stack.module:[foo:bar/* -app").unwrap();
+    }
+
+    #[test]
+    fn invalid_app_matcher() {
+        let rule = parse_rule("app://../../src/some-file.ts -group -app").unwrap();
+
+        let frames = &[
+            Frame::from_test(&json!({}), "native"),
+            Frame::from_test(&json!({"in_app": true}), "native"),
+            Frame::from_test(&json!({"in_app": false}), "native"),
+        ];
+        assert!(!rule.matches_frame(frames, 0));
+        assert!(!rule.matches_frame(frames, 1));
+        assert!(!rule.matches_frame(frames, 2));
     }
 }

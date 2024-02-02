@@ -46,6 +46,8 @@ pub enum FrameField {
     Module,
     Package,
     Path,
+    // NOTE: This is only used to have something to `Display` in the `Noop` matcher.
+    App,
 }
 
 impl fmt::Display for FrameField {
@@ -56,6 +58,7 @@ impl fmt::Display for FrameField {
             FrameField::Module => write!(f, "module"),
             FrameField::Package => write!(f, "package"),
             FrameField::Path => write!(f, "path"),
+            FrameField::App => write!(f, "app"),
         }
     }
 }
@@ -69,6 +72,8 @@ impl Frame {
             FrameField::Module => self.module.as_ref(),
             FrameField::Package => self.package.as_ref(),
             FrameField::Path => self.path.as_ref(),
+            // NOTE: we never *access* the field via `get_field`.
+            FrameField::App => unreachable!(),
         }
     }
 

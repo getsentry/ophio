@@ -252,6 +252,7 @@ impl FrameMatcherInner {
         cache: &mut Cache,
     ) -> anyhow::Result<Self> {
         let Ok(pattern) = cache.get_or_try_insert_regex(pattern, path_like) else {
+            // TODO: we should be returning real errors in a `strict` parsing mode
             return Ok(Self::Noop { field });
         };
 
@@ -274,7 +275,11 @@ impl FrameMatcherInner {
         match expected {
             "1" | "true" | "yes" => Ok(Self::InApp { expected: true }),
             "0" | "false" | "no" => Ok(Self::InApp { expected: false }),
-            _ => Err(anyhow::anyhow!("Invalid value for `app`: `{expected}`")),
+            _ => Ok(Self::Noop {
+                field: FrameField::App,
+            }),
+            // TODO: we should be returning real errors in a `strict` parsing mode
+            // _ => Err(anyhow::anyhow!("Invalid value for `app`: `{expected}`")),
         }
     }
 
