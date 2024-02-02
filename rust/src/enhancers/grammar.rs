@@ -213,30 +213,52 @@ fn matcher<'a>(
     Ok((m, rest))
 }
 
+fn caller_matcher<'a>(
+    input: &'a str,
+    regex_cache: &mut RegexCache,
+) -> anyhow::Result<(Matcher, &'a str)> {
+    let (matcher, rest) = matcher(input, FrameOffset::Caller, regex_cache)?;
+
+    let rest = rest.trim_start();
+    let rest = expect(rest, "]")?;
+
+    let rest = rest.trim_start();
+    let rest = expect(rest, "|")?;
+
+    Ok((matcher, rest))
+}
+
+fn callee_matcher<'a>(
+    input: &'a str,
+    regex_cache: &mut RegexCache,
+) -> anyhow::Result<(Matcher, &'a str)> {
+    let rest = input.trim_start();
+    let rest = expect(rest, "[")?;
+
+    let (matcher, rest) = matcher(rest, FrameOffset::Callee, regex_cache)?;
+
+    let rest = rest.trim_start();
+    let rest = expect(rest, "]")?;
+
+    Ok((matcher, rest))
+}
+
 fn matchers<'a>(
     input: &'a str,
     regex_cache: &mut RegexCache,
 ) -> anyhow::Result<(Vec<Matcher>, &'a str)> {
-    let input = input.trim_start();
+    let mut input = input.trim_start();
 
     let mut result = Vec::new();
 
-    let mut input = if let Some(rest) = input.strip_prefix('[') {
-        let (caller_matcher, rest) = matcher(rest, FrameOffset::Caller, regex_cache)
-            .with_context(|| format!("at `{rest}`: failed to parse caller matcher"))?;
-        let rest = rest.trim_start();
-        let rest = expect(rest, "]")
-            .with_context(|| format!("at `{rest}`: failed to parse caller matcher"))?;
-        let rest = rest.trim_start();
-        let rest = expect(rest, "|")
-            .with_context(|| format!("at `{rest}`: failed to parse caller matcher"))?;
+    if let Some(rest) = input.strip_prefix('[') {
+        let (caller_matcher, rest) = caller_matcher(rest, regex_cache)
+            .with_context(|| format!("at `{input}`: failed to parse caller matcher"))?;
 
         result.push(caller_matcher);
 
-        rest.trim_start()
-    } else {
-        input
-    };
+        input = rest.trim_start()
+    }
 
     let mut parsed = false;
 
@@ -255,23 +277,15 @@ fn matchers<'a>(
         anyhow::bail!("at `{input}`: expected at least one matcher");
     }
 
-    let rest = if let Some(rest) = input.strip_prefix('|') {
-        let rest = rest.trim_start();
-        let rest = expect(rest, "[")
-            .with_context(|| format!("at `{rest}`: failed to parse callee matcher"))?;
-        let (callee_matcher, rest) = matcher(rest, FrameOffset::Callee, regex_cache)
-            .with_context(|| format!("at `{rest}`: failed to parse callee matcher"))?;
-        let rest = rest.trim_start();
-        let rest = expect(rest, "]")
-            .with_context(|| format!("at `{rest}`: failed to parse callee matcher"))?;
+    if let Some(rest) = input.strip_prefix('|') {
+        let (callee_matcher, rest) = callee_matcher(rest, regex_cache)
+            .with_context(|| format!("at `{input}`: failed to parse callee matcher"))?;
 
         result.push(callee_matcher);
-        rest
-    } else {
-        input
-    };
+        input = rest;
+    }
 
-    Ok((result, rest))
+    Ok((result, input))
 }
 
 pub fn parse_rule(input: &str, regex_cache: &mut RegexCache) -> anyhow::Result<Rule> {
