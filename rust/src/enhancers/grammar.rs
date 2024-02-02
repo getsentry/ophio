@@ -1,11 +1,9 @@
 //! Parse enhancement rules from the string representation.
 //!
-//! The parser is made using the `nom` parser combinator library.
-//! The grammar was adapted to `nom` from:
+//! We are using a hand-written recursive descent parser. The grammar is adapted from
 //! <https://github.com/getsentry/sentry/blob/e5c5e56d176d96081ce4b25424e6ec7d3ba17cff/src/sentry/grouping/enhancer/__init__.py#L42-L79>
 
 // TODO:
-// - we should probably support better Error handling
 // - quoted identifiers/arguments should properly support escapes, etc
 
 use std::borrow::Cow;
@@ -17,26 +15,20 @@ use super::matchers::{FrameOffset, Matcher};
 use super::rules::Rule;
 use super::RegexCache;
 
-const MATCHER_LOOKAHEAD: [&str; 11] = [
-    "!",
-    "a",
-    "category:",
-    "e",
-    "f",
-    "me",
-    "mo",
-    "p",
-    "s",
-    "t",
-    "va",
-];
-
+/// Strips the prefix `pat` from `input` and returns the rest.
+///
+/// Returns an error if `input` doesn't start with `pat.`
 fn expect<'a>(input: &'a str, pat: &str) -> anyhow::Result<&'a str> {
     input
         .strip_prefix(pat)
         .ok_or_else(|| anyhow!("at `{input}`: expected `{pat}`"))
 }
 
+/// Parses a string into a bool.
+///
+/// `"1"`, `"yes"`, and `"true"` parse to `true`,
+/// `"0"`, `"no"`, and `"false"` parse to `false`,
+/// and anything else is an error.
 fn bool(input: &str) -> anyhow::Result<bool> {
     match input {
         "1" | "yes" | "true" => Ok(true),
@@ -45,6 +37,9 @@ fn bool(input: &str) -> anyhow::Result<bool> {
     }
 }
 
+/// Parses an "identifier" and returns it together with the rest of the input.
+///
+/// An "identifier" is defined by the regex `[a-zA-Z0-9_.-]+`.
 fn ident(input: &str) -> anyhow::Result<(&str, &str)> {
     let Some(end) =
         input.find(|c: char| !(c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-')))
@@ -59,6 +54,13 @@ fn ident(input: &str) -> anyhow::Result<(&str, &str)> {
     Ok(input.split_at(end))
 }
 
+/// Parses an "argument", i.e., the right-hand side of a matcher definition, and returns it together
+/// with the rest of the input.
+///
+/// An "argument" is either a sequence of non-whitespace ASCII characters or any sequence of
+/// non-`"` characters enclosed in `""`.
+///
+/// Escaped characters in the argument are unescaped.
 fn argument(input: &str) -> anyhow::Result<(Cow<str>, &str)> {
     let (result, rest) = if let Some(rest) = input.strip_prefix('"') {
         let end = rest
@@ -84,6 +86,7 @@ fn argument(input: &str) -> anyhow::Result<(Cow<str>, &str)> {
     Ok((unescaped, rest))
 }
 
+/// Parses a [`VarAction`] and returns it together with the rest of the input.
 fn var_action(input: &str) -> anyhow::Result<(VarAction, &str)> {
     let input = input.trim_start();
 
@@ -127,6 +130,7 @@ fn var_action(input: &str) -> anyhow::Result<(VarAction, &str)> {
     Ok((a, rest))
 }
 
+/// Parses a [`FlagAction`] and returns it together with the rest of the input.
 fn flag_action(input: &str) -> anyhow::Result<(FlagAction, &str)> {
     let input = input.trim_start();
 
@@ -160,12 +164,21 @@ fn flag_action(input: &str) -> anyhow::Result<(FlagAction, &str)> {
     Ok((FlagAction { flag, ty, range }, rest))
 }
 
+/// Parses a sequence of [`Actions`](Action) and returns it.
+///
+/// The sequence must contain at least one action.
+///
+/// Since actions are the last part of a rule definition and can only
+/// be followed by whitespace or a comment, there is no point in returning the
+/// rest of the input.
 fn actions(input: &str) -> anyhow::Result<Vec<Action>> {
     let mut input = input.trim_start();
 
     let mut result = Vec::new();
 
+    // we're done with actions if there's either nothing or just a comment remaining.
     while !input.is_empty() && !input.starts_with('#') {
+        // flag actions always start with one of these characters, and var actions never do.
         if input.starts_with(['v', '^', '+', '-']) {
             let (action, after_action) = flag_action(input)
                 .with_context(|| format!("at `{input}`: failed to parse flag action"))?;
@@ -188,6 +201,7 @@ fn actions(input: &str) -> anyhow::Result<Vec<Action>> {
     Ok(result)
 }
 
+/// Parses a [`Matcher`] and returns it together with the rest of the input.
 fn matcher<'a>(
     input: &'a str,
     frame_offset: FrameOffset,
@@ -213,6 +227,10 @@ fn matcher<'a>(
     Ok((m, rest))
 }
 
+/// Parses the caller matcher in a rule and returns it together with the rest of the input.
+///
+/// A caller matcher is defined as `[ <matcher> ] |`.
+/// NB: This function assumes that the leading `[` has already been consumed!
 fn caller_matcher<'a>(
     input: &'a str,
     regex_cache: &mut RegexCache,
@@ -228,6 +246,10 @@ fn caller_matcher<'a>(
     Ok((matcher, rest))
 }
 
+/// Parses the callee matcher in a rule and returns it together with the rest of the input.
+///
+/// A callee matcher is defined as `| [ <matcher> ] `.
+/// NB: This function assumes that the leading `|` has already been consumed!
 fn callee_matcher<'a>(
     input: &'a str,
     regex_cache: &mut RegexCache,
@@ -243,6 +265,10 @@ fn callee_matcher<'a>(
     Ok((matcher, rest))
 }
 
+/// Parses a sequence of [`Matchers`](Matcher) and returns it
+/// together with the rest of the input.
+///
+/// The sequence must contain at least one matcher.
 fn matchers<'a>(
     input: &'a str,
     regex_cache: &mut RegexCache,
@@ -251,6 +277,7 @@ fn matchers<'a>(
 
     let mut result = Vec::new();
 
+    // A `[` at the start means we have a caller matcher
     if let Some(rest) = input.strip_prefix('[') {
         let (caller_matcher, rest) = caller_matcher(rest, regex_cache)
             .with_context(|| format!("at `{input}`: failed to parse caller matcher"))?;
@@ -260,7 +287,28 @@ fn matchers<'a>(
         input = rest.trim_start()
     }
 
+    // Keep track of whether we've parsed at least one matcher
     let mut parsed = false;
+
+    // Possible prefixes of a matcher definition.
+    // Matchers always start with one of these,
+    // and actions never do. This means that if
+    // the rest of the input starts with one these,
+    // there is another matcher to parse, and if it doesn't,
+    // there isn't.
+    const MATCHER_LOOKAHEAD: [&str; 11] = [
+        "!",
+        "a",
+        "category:",
+        "e",
+        "f",
+        "me",
+        "mo",
+        "p",
+        "s",
+        "t",
+        "va",
+    ];
 
     while MATCHER_LOOKAHEAD
         .iter()
@@ -277,6 +325,7 @@ fn matchers<'a>(
         anyhow::bail!("at `{input}`: expected at least one matcher");
     }
 
+    // A `|` after the main list of matchers means we have a callee matcher.
     if let Some(rest) = input.strip_prefix('|') {
         let (callee_matcher, rest) = callee_matcher(rest, regex_cache)
             .with_context(|| format!("at `{input}`: failed to parse callee matcher"))?;
@@ -288,6 +337,9 @@ fn matchers<'a>(
     Ok((result, input))
 }
 
+/// Parses a [`Rule`] from its string representation.
+///
+/// `regex_cache` is used to memoize the construction of regexes.
 pub fn parse_rule(input: &str, regex_cache: &mut RegexCache) -> anyhow::Result<Rule> {
     let (matchers, after_matchers) = matchers(input, regex_cache)
         .with_context(|| format!("at `{input}`: failed to parse matchers"))?;
