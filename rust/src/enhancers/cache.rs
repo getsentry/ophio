@@ -9,6 +9,7 @@ use smol_str::SmolStr;
 
 use super::{grammar::parse_rule, rules::Rule};
 
+/// An LRU cache for memoizing regex construction.
 #[derive(Debug, Default)]
 pub struct RegexCache(Option<LruCache<(SmolStr, bool), Arc<Regex>>>);
 
@@ -40,6 +41,8 @@ impl RegexCache {
     }
 }
 
+/// A cache for memoizing the parsing of [`Rules`](Rule) from their string
+/// representations.
 #[derive(Debug, Default)]
 pub struct RulesCache(Option<LruCache<SmolStr, Rule>>);
 
