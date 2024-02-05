@@ -29,7 +29,7 @@ impl RegexCache {
             Some(cache) => {
                 let key = (key.into(), is_path);
                 if let Some(regex) = cache.get(&key) {
-                    return Ok(regex.clone());
+                    return Ok(Arc::clone(regex));
                 }
 
                 let regex = translate_pattern(&key.0, key.1).map(Arc::new)?;

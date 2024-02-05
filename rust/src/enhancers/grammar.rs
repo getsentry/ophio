@@ -15,6 +15,26 @@ use super::matchers::{FrameOffset, Matcher};
 use super::rules::Rule;
 use super::RegexCache;
 
+/// Possible prefixes of a matcher definition.
+/// Matchers always start with one of these,
+/// and actions never do. This means that if
+/// the rest of the input starts with one these,
+/// there is another matcher to parse, and if it doesn't,
+/// there isn't.
+const MATCHER_LOOKAHEAD: [&str; 11] = [
+    "!",
+    "a",
+    "category:",
+    "e",
+    "f",
+    "me",
+    "mo",
+    "p",
+    "s",
+    "t",
+    "va",
+];
+
 /// Strips the prefix `pat` from `input` and returns the rest.
 ///
 /// Returns an error if `input` doesn't start with `pat.`
@@ -289,26 +309,6 @@ fn matchers<'a>(
 
     // Keep track of whether we've parsed at least one matcher
     let mut parsed = false;
-
-    // Possible prefixes of a matcher definition.
-    // Matchers always start with one of these,
-    // and actions never do. This means that if
-    // the rest of the input starts with one these,
-    // there is another matcher to parse, and if it doesn't,
-    // there isn't.
-    const MATCHER_LOOKAHEAD: [&str; 11] = [
-        "!",
-        "a",
-        "category:",
-        "e",
-        "f",
-        "me",
-        "mo",
-        "p",
-        "s",
-        "t",
-        "va",
-    ];
 
     while MATCHER_LOOKAHEAD
         .iter()
