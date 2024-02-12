@@ -15,7 +15,7 @@ use smol_str::SmolStr;
 
 use super::families::Families;
 use super::frame::{Frame, FrameField};
-use super::{Cache, ExceptionData};
+use super::{ExceptionData, RegexCache};
 
 /// Enum that wraps a frame or exception matcher.
 ///
@@ -52,32 +52,42 @@ impl Matcher {
     ///   of families; for all others, a glob pattern.
     /// * frame_offset: Determines whether this matcher should match a frame by checking the frame itself
     ///   or one of its adjacent frames. This only applies to frame matchers, not exception matchers.
-    /// * `cache`: A cache for regexes.
+    /// * `regex_cache`: A cache for regexes.
     pub(crate) fn new(
         negated: bool,
         matcher_type: &str,
         raw_pattern: &str,
         frame_offset: FrameOffset,
-        cache: &mut Cache,
+        regex_cache: &mut RegexCache,
     ) -> anyhow::Result<Self> {
         match matcher_type {
             // Field matchers
             "stack.module" | "module" => Ok(Self::new_frame(
                 negated,
                 frame_offset,
-                FrameMatcherInner::new_field(FrameField::Module, false, raw_pattern, cache)?,
+                FrameMatcherInner::new_field(FrameField::Module, false, raw_pattern, regex_cache)?,
                 raw_pattern,
             )),
             "stack.function" | "function" => Ok(Self::new_frame(
                 negated,
                 frame_offset,
-                FrameMatcherInner::new_field(FrameField::Function, false, raw_pattern, cache)?,
+                FrameMatcherInner::new_field(
+                    FrameField::Function,
+                    false,
+                    raw_pattern,
+                    regex_cache,
+                )?,
                 raw_pattern,
             )),
             "category" => Ok(Self::new_frame(
                 negated,
                 frame_offset,
-                FrameMatcherInner::new_field(FrameField::Category, false, raw_pattern, cache)?,
+                FrameMatcherInner::new_field(
+                    FrameField::Category,
+                    false,
+                    raw_pattern,
+                    regex_cache,
+                )?,
                 raw_pattern,
             )),
 
@@ -85,13 +95,13 @@ impl Matcher {
             "stack.abs_path" | "path" => Ok(Self::new_frame(
                 negated,
                 frame_offset,
-                FrameMatcherInner::new_field(FrameField::Path, true, raw_pattern, cache)?,
+                FrameMatcherInner::new_field(FrameField::Path, true, raw_pattern, regex_cache)?,
                 raw_pattern,
             )),
             "stack.package" | "package" => Ok(Self::new_frame(
                 negated,
                 frame_offset,
-                FrameMatcherInner::new_field(FrameField::Package, true, raw_pattern, cache)?,
+                FrameMatcherInner::new_field(FrameField::Package, true, raw_pattern, regex_cache)?,
                 raw_pattern,
             )),
 
@@ -115,17 +125,17 @@ impl Matcher {
             "error.type" | "type" => Ok(Self::Exception(ExceptionMatcher::new_type(
                 negated,
                 raw_pattern,
-                cache,
+                regex_cache,
             )?)),
 
             "error.value" | "value" => Ok(Self::Exception(ExceptionMatcher::new_value(
                 negated,
                 raw_pattern,
-                cache,
+                regex_cache,
             )?)),
 
             "error.mechanism" | "mechanism" => Ok(Self::Exception(
-                ExceptionMatcher::new_mechanism(negated, raw_pattern, cache)?,
+                ExceptionMatcher::new_mechanism(negated, raw_pattern, regex_cache)?,
             )),
 
             matcher_type => anyhow::bail!("Unknown matcher `{matcher_type}`"),
@@ -249,9 +259,9 @@ impl FrameMatcherInner {
         field: FrameField,
         path_like: bool,
         pattern: &str,
-        cache: &mut Cache,
+        regex_cache: &mut RegexCache,
     ) -> anyhow::Result<Self> {
-        let Ok(pattern) = cache.get_or_try_insert_regex(pattern, path_like) else {
+        let Ok(pattern) = regex_cache.get_or_try_insert(pattern, path_like) else {
             // TODO: we should be returning real errors in a `strict` parsing mode
             return Ok(Self::Noop { field });
         };
@@ -362,8 +372,12 @@ pub struct ExceptionMatcher {
 
 impl ExceptionMatcher {
     /// Creates a matcher that checks an exception's `type` field.
-    fn new_type(negated: bool, raw_pattern: &str, cache: &mut Cache) -> anyhow::Result<Self> {
-        let pattern = cache.get_or_try_insert_regex(raw_pattern, false)?;
+    fn new_type(
+        negated: bool,
+        raw_pattern: &str,
+        regex_cache: &mut RegexCache,
+    ) -> anyhow::Result<Self> {
+        let pattern = regex_cache.get_or_try_insert(raw_pattern, false)?;
         Ok(Self {
             negated,
             pattern,
@@ -373,8 +387,12 @@ impl ExceptionMatcher {
     }
 
     /// Creates a matcher that checks an exception's `value` field.
-    fn new_value(negated: bool, raw_pattern: &str, cache: &mut Cache) -> anyhow::Result<Self> {
-        let pattern = cache.get_or_try_insert_regex(raw_pattern, false)?;
+    fn new_value(
+        negated: bool,
+        raw_pattern: &str,
+        regex_cache: &mut RegexCache,
+    ) -> anyhow::Result<Self> {
+        let pattern = regex_cache.get_or_try_insert(raw_pattern, false)?;
         Ok(Self {
             negated,
             pattern,
@@ -384,8 +402,12 @@ impl ExceptionMatcher {
     }
 
     /// Creates a matcher that checks an exception's `mechanism` field.
-    fn new_mechanism(negated: bool, raw_pattern: &str, cache: &mut Cache) -> anyhow::Result<Self> {
-        let pattern = cache.get_or_try_insert_regex(raw_pattern, false)?;
+    fn new_mechanism(
+        negated: bool,
+        raw_pattern: &str,
+        regex_cache: &mut RegexCache,
+    ) -> anyhow::Result<Self> {
+        let pattern = regex_cache.get_or_try_insert(raw_pattern, false)?;
         Ok(Self {
             negated,
             pattern,

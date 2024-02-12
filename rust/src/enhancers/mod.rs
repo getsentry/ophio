@@ -103,7 +103,7 @@ impl Enhancements {
             .map(|r| {
                 let matchers =
                     r.0.into_iter()
-                        .map(|encoded| EncodedMatcher::into_matcher(encoded, cache))
+                        .map(|encoded| EncodedMatcher::into_matcher(encoded, &mut cache.regex))
                         .collect::<anyhow::Result<_>>()?;
                 let actions =
                     r.1.into_iter()

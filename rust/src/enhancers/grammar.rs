@@ -1,179 +1,350 @@
 //! Parse enhancement rules from the string representation.
 //!
-//! The parser is made using the `nom` parser combinator library.
-//! The grammar was adapted to `nom` from:
+//! We are using a hand-written recursive descent parser. The grammar is adapted from
 //! <https://github.com/getsentry/sentry/blob/e5c5e56d176d96081ce4b25424e6ec7d3ba17cff/src/sentry/grouping/enhancer/__init__.py#L42-L79>
 
 // TODO:
-// - we should probably support better Error handling
 // - quoted identifiers/arguments should properly support escapes, etc
 
-use nom::branch::alt;
-use nom::bytes::complete::{tag, take_while1};
-use nom::character::complete::{anychar, char, space0};
-use nom::combinator::{all_consuming, map, map_res, opt, value};
-use nom::multi::{many0, many1};
-use nom::sequence::{delimited, preceded, tuple};
-use nom::{Finish, IResult, Parser};
-use smol_str::SmolStr;
+use std::borrow::Cow;
+
+use anyhow::{anyhow, Context};
 
 use super::actions::{Action, FlagAction, FlagActionType, Range, VarAction};
 use super::matchers::{FrameOffset, Matcher};
 use super::rules::Rule;
-use super::Cache;
+use super::RegexCache;
 
-fn ident(input: &str) -> IResult<&str, &str> {
-    take_while1(|c: char| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-'))(input)
+/// Possible prefixes of a matcher definition.
+/// Matchers always start with one of these,
+/// and actions never do. This means that if
+/// the rest of the input starts with one these,
+/// there is another matcher to parse, and if it doesn't,
+/// there isn't.
+const MATCHER_LOOKAHEAD: [&str; 11] = [
+    "!",
+    "a",
+    "category:",
+    "e",
+    "f",
+    "me",
+    "mo",
+    "p",
+    "s",
+    "t",
+    "va",
+];
+
+/// Strips the prefix `pat` from `input` and returns the rest.
+///
+/// Returns an error if `input` doesn't start with `pat.`
+fn expect<'a>(input: &'a str, pat: &str) -> anyhow::Result<&'a str> {
+    input
+        .strip_prefix(pat)
+        .ok_or_else(|| anyhow!("at `{input}`: expected `{pat}`"))
 }
 
-fn rule_bool(input: &str) -> IResult<&str, bool> {
-    alt((
-        value(true, alt((tag("1"), tag("yes"), tag("true")))),
-        value(false, alt((tag("0"), tag("no"), tag("false")))),
-    ))(input)
-}
-
-fn rule_number(input: &str) -> IResult<&str, usize> {
-    map(take_while1(|c: char| c.is_ascii_digit()), |n: &str| {
-        n.parse().unwrap()
-    })(input)
-}
-
-fn frame_matcher(frame_offset: FrameOffset) -> impl Fn(&str) -> IResult<&str, Matcher> {
-    move |input| {
-        let input = input.trim_start();
-
-        let quoted_ident = delimited(
-            char('"'),
-            take_while1(|c: char| {
-                c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | ':' | '-' | ' ')
-            }),
-            char('"'),
-        );
-        let matcher_type = alt((ident, quoted_ident));
-
-        let unquoted = take_while1(|c: char| !c.is_ascii_whitespace());
-        // TODO: escapes, etc
-        let quoted = delimited(char('"'), take_while1(|c: char| c != '"'), char('"'));
-        let argument = alt((quoted, unquoted));
-
-        let mut matcher = map_res(
-            tuple((opt(char('!')), matcher_type, char(':'), argument)),
-            |(negated, matcher_type, _, argument): (_, _, _, &str)| {
-                // TODO: support even more escapes
-                let unescaped = argument.replace("\\\\", "\\");
-                Matcher::new(
-                    negated.is_some(),
-                    matcher_type,
-                    &unescaped,
-                    frame_offset,
-                    &mut Cache::default(),
-                )
-            },
-        );
-
-        matcher(input)
+/// Parses a string into a bool.
+///
+/// `"1"`, `"yes"`, and `"true"` parse to `true`,
+/// `"0"`, `"no"`, and `"false"` parse to `false`,
+/// and anything else is an error.
+fn bool(input: &str) -> anyhow::Result<bool> {
+    match input {
+        "1" | "yes" | "true" => Ok(true),
+        "0" | "no" | "false" => Ok(false),
+        _ => anyhow::bail!("at `{input}`: invalid boolean value"),
     }
 }
 
-fn matchers(input: &str) -> IResult<&str, Vec<Matcher>> {
+/// Parses an "identifier" and returns it together with the rest of the input.
+///
+/// An "identifier" is defined by the regex `[a-zA-Z0-9_.-]+`.
+fn ident(input: &str) -> anyhow::Result<(&str, &str)> {
+    let Some(end) =
+        input.find(|c: char| !(c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-')))
+    else {
+        return Ok((input, ""));
+    };
+
+    if end == 0 {
+        anyhow::bail!("at `{input}`: invalid identifier");
+    }
+
+    Ok(input.split_at(end))
+}
+
+/// Parses an "argument", i.e., the right-hand side of a matcher definition, and returns it together
+/// with the rest of the input.
+///
+/// An "argument" is either a sequence of non-whitespace ASCII characters or any sequence of
+/// non-`"` characters enclosed in `""`.
+///
+/// Escaped characters in the argument are unescaped.
+fn argument(input: &str) -> anyhow::Result<(Cow<str>, &str)> {
+    let (result, rest) = if let Some(rest) = input.strip_prefix('"') {
+        let end = rest
+            .find('"')
+            .ok_or_else(|| anyhow!("at `{input}`: unclosed `\"`"))?;
+        let result = &rest[..end];
+        let rest = &rest[end + 1..];
+        (result, rest)
+    } else {
+        match input.find(|c: char| c.is_ascii_whitespace()) {
+            None => (input, ""),
+            Some(end) => input.split_at(end),
+        }
+    };
+
+    // TODO: support even more escapes
+    let unescaped = if result.contains("\\\\") {
+        result.replace("\\\\", "\\").into()
+    } else {
+        result.into()
+    };
+
+    Ok((unescaped, rest))
+}
+
+/// Parses a [`VarAction`] and returns it together with the rest of the input.
+fn var_action(input: &str) -> anyhow::Result<(VarAction, &str)> {
     let input = input.trim_start();
 
-    let caller_matcher = tuple((
-        space0,
-        char('['),
-        space0,
-        frame_matcher(FrameOffset::Caller),
-        space0,
-        char(']'),
-        space0,
-        char('|'),
-    ));
-    let callee_matcher = tuple((
-        space0,
-        char('|'),
-        space0,
-        char('['),
-        space0,
-        frame_matcher(FrameOffset::Callee),
-        space0,
-        char(']'),
-    ));
+    let (lhs, after_lhs) =
+        ident(input).with_context(|| format!("at `{input}`: expected variable name"))?;
 
-    let mut matchers = tuple((
-        opt(caller_matcher),
-        many1(frame_matcher(FrameOffset::None)),
-        opt(callee_matcher),
-    ));
+    let after_lhs = after_lhs.trim_start();
 
-    let (input, (caller_matcher, mut matchers, callee_matcher)) = matchers(input)?;
+    let after_eq = expect(after_lhs, "=")?.trim_start();
 
-    if let Some((_, _, _, m, _, _, _, _)) = caller_matcher {
-        matchers.push(m);
-    }
+    let (rhs, rest) =
+        ident(after_eq).with_context(|| format!("at `{after_eq}`: expected value for variable"))?;
 
-    if let Some((_, _, _, _, _, m, _, _)) = callee_matcher {
-        matchers.push(m);
-    }
+    let a = match lhs {
+        "max-frames" => {
+            let n = rhs
+                .parse()
+                .with_context(|| format!("at `{rhs}`: failed to parse rhs of `max-frames`"))?;
+            VarAction::MaxFrames(n)
+        }
 
-    Ok((input, matchers))
+        "min-frames" => {
+            let n = rhs
+                .parse()
+                .with_context(|| format!("at `{rhs}`: failed to parse rhs of `min-frames`"))?;
+            VarAction::MinFrames(n)
+        }
+
+        "invert-stacktrace" => {
+            let b = bool(rhs).with_context(|| {
+                format!("at `{rhs}`: failed to parse rhs of `invert-stacktrace`")
+            })?;
+            VarAction::InvertStacktrace(b)
+        }
+
+        "category" => VarAction::Category(rhs.into()),
+
+        _ => anyhow::bail!("at `{input}`: invalid variable name `{lhs}`"),
+    };
+
+    Ok((a, rest))
 }
 
-fn actions(input: &str) -> IResult<&str, Vec<Action>> {
-    let max_frames = preceded(
-        tuple((tag("max-frames"), space0, char('='), space0)),
-        rule_number,
-    )
-    .map(VarAction::MaxFrames);
+/// Parses a [`FlagAction`] and returns it together with the rest of the input.
+fn flag_action(input: &str) -> anyhow::Result<(FlagAction, &str)> {
+    let input = input.trim_start();
 
-    let min_frames = preceded(
-        tuple((tag("min-frames"), space0, char('='), space0)),
-        rule_number,
-    )
-    .map(VarAction::MinFrames);
+    let (range, after_range) = if let Some(rest) = input.strip_prefix('^') {
+        (Some(Range::Up), rest)
+    } else if let Some(rest) = input.strip_prefix('v') {
+        (Some(Range::Up), rest)
+    } else {
+        (None, input)
+    };
 
-    let invert_stacktrace = preceded(
-        tuple((tag("invert-stacktrace"), space0, char('='), space0)),
-        rule_bool,
-    )
-    .map(VarAction::InvertStacktrace);
+    let (flag, after_flag) = if let Some(rest) = after_range.strip_prefix('+') {
+        (true, rest)
+    } else if let Some(rest) = after_range.strip_prefix('-') {
+        (false, rest)
+    } else {
+        anyhow::bail!("at `{input}`: expected flag value");
+    };
 
-    let category = preceded(tuple((tag("category"), space0, char('='), space0)), ident)
-        .map(|c| VarAction::Category(SmolStr::new(c)));
+    let (name, rest) =
+        ident(after_flag).with_context(|| format!("at `{after_flag}`: expected flag name"))?;
 
-    let var_action = alt((max_frames, min_frames, invert_stacktrace, category));
+    let ty = match name {
+        "app" => FlagActionType::App,
+        "group" => FlagActionType::Group,
+        "prefix" => FlagActionType::Prefix,
+        "sentinel" => FlagActionType::Sentinel,
+        _ => anyhow::bail!("at `{after_flag}`: invalid flag name `{name}`"),
+    };
 
-    let flag_name = alt((
-        value(FlagActionType::Group, tag("group")),
-        value(FlagActionType::App, tag("app")),
-        value(FlagActionType::Prefix, tag("prefix")),
-        value(FlagActionType::Sentinel, tag("sentinel")),
-    ));
-    let range = opt(alt((
-        value(Range::Up, char('^')),
-        value(Range::Down, char('v')),
-    )));
-    let flag = alt((value(true, char('+')), value(false, char('-'))));
-    let flag_action =
-        tuple((range, flag, flag_name)).map(|(range, flag, ty)| FlagAction { range, flag, ty });
+    Ok((FlagAction { flag, ty, range }, rest))
+}
 
-    let action = preceded(
-        space0,
-        alt((map(flag_action, Action::Flag), map(var_action, Action::Var))),
-    );
+/// Parses a sequence of [`Actions`](Action) and returns it.
+///
+/// The sequence must contain at least one action.
+///
+/// Since actions are the last part of a rule definition and can only
+/// be followed by whitespace or a comment, there is no point in returning the
+/// rest of the input.
+fn actions(input: &str) -> anyhow::Result<Vec<Action>> {
+    let mut input = input.trim_start();
 
-    let (input, actions) = many1(action)(input)?;
+    let mut result = Vec::new();
 
-    Ok((input, actions))
+    // we're done with actions if there's either nothing or just a comment remaining.
+    while !input.is_empty() && !input.starts_with('#') {
+        // flag actions always start with one of these characters, and var actions never do.
+        if input.starts_with(['v', '^', '+', '-']) {
+            let (action, after_action) = flag_action(input)
+                .with_context(|| format!("at `{input}`: failed to parse flag action"))?;
+
+            result.push(Action::Flag(action));
+            input = after_action.trim_start();
+        } else {
+            let (action, after_action) = var_action(input)
+                .with_context(|| format!("at `{input}`: failed to parse var action"))?;
+
+            result.push(Action::Var(action));
+            input = after_action.trim_start();
+        }
+    }
+
+    if result.is_empty() {
+        anyhow::bail!("expected at least one action");
+    }
+
+    Ok(result)
+}
+
+/// Parses a [`Matcher`] and returns it together with the rest of the input.
+fn matcher<'a>(
+    input: &'a str,
+    frame_offset: FrameOffset,
+    regex_cache: &mut RegexCache,
+) -> anyhow::Result<(Matcher, &'a str)> {
+    let input = input.trim_start();
+
+    let (negated, before_name) = if let Some(rest) = input.strip_prefix('!') {
+        (true, rest)
+    } else {
+        (false, input)
+    };
+
+    let (name, after_name) = ident(before_name)
+        .with_context(|| format!("at `{before_name}`: failed to parse matcher name"))?;
+
+    let before_arg = expect(after_name, ":")?;
+
+    let (arg, rest) = argument(before_arg)
+        .with_context(|| format!("at `{before_arg}`: failed to parse matcher argument"))?;
+
+    let m = Matcher::new(negated, name, &arg, frame_offset, regex_cache)?;
+    Ok((m, rest))
+}
+
+/// Parses the caller matcher in a rule and returns it together with the rest of the input.
+///
+/// A caller matcher is defined as `[ <matcher> ] |`.
+/// NB: This function assumes that the leading `[` has already been consumed!
+fn caller_matcher<'a>(
+    input: &'a str,
+    regex_cache: &mut RegexCache,
+) -> anyhow::Result<(Matcher, &'a str)> {
+    let (matcher, rest) = matcher(input, FrameOffset::Caller, regex_cache)?;
+
+    let rest = rest.trim_start();
+    let rest = expect(rest, "]")?;
+
+    let rest = rest.trim_start();
+    let rest = expect(rest, "|")?;
+
+    Ok((matcher, rest))
+}
+
+/// Parses the callee matcher in a rule and returns it together with the rest of the input.
+///
+/// A callee matcher is defined as `| [ <matcher> ] `.
+/// NB: This function assumes that the leading `|` has already been consumed!
+fn callee_matcher<'a>(
+    input: &'a str,
+    regex_cache: &mut RegexCache,
+) -> anyhow::Result<(Matcher, &'a str)> {
+    let rest = input.trim_start();
+    let rest = expect(rest, "[")?;
+
+    let (matcher, rest) = matcher(rest, FrameOffset::Callee, regex_cache)?;
+
+    let rest = rest.trim_start();
+    let rest = expect(rest, "]")?;
+
+    Ok((matcher, rest))
+}
+
+/// Parses a sequence of [`Matchers`](Matcher) and returns it
+/// together with the rest of the input.
+///
+/// The sequence must contain at least one matcher.
+fn matchers<'a>(
+    input: &'a str,
+    regex_cache: &mut RegexCache,
+) -> anyhow::Result<(Vec<Matcher>, &'a str)> {
+    let mut input = input.trim_start();
+
+    let mut result = Vec::new();
+
+    // A `[` at the start means we have a caller matcher
+    if let Some(rest) = input.strip_prefix('[') {
+        let (caller_matcher, rest) = caller_matcher(rest, regex_cache)
+            .with_context(|| format!("at `{input}`: failed to parse caller matcher"))?;
+
+        result.push(caller_matcher);
+
+        input = rest.trim_start()
+    }
+
+    // Keep track of whether we've parsed at least one matcher
+    let mut parsed = false;
+
+    while MATCHER_LOOKAHEAD
+        .iter()
+        .any(|prefix| input.starts_with(prefix))
+    {
+        let (m, rest) = matcher(input, FrameOffset::None, regex_cache)
+            .with_context(|| format!("at `{input}`: failed to parse matcher"))?;
+        result.push(m);
+        input = rest.trim_start();
+        parsed = true;
+    }
+
+    if !parsed {
+        anyhow::bail!("at `{input}`: expected at least one matcher");
+    }
+
+    // A `|` after the main list of matchers means we have a callee matcher.
+    if let Some(rest) = input.strip_prefix('|') {
+        let (callee_matcher, rest) = callee_matcher(rest, regex_cache)
+            .with_context(|| format!("at `{input}`: failed to parse callee matcher"))?;
+
+        result.push(callee_matcher);
+        input = rest;
+    }
+
+    Ok((result, input))
 }
 
 /// Parses a [`Rule`] from its string representation.
-pub fn parse_rule(input: &str) -> anyhow::Result<Rule> {
-    let comment = tuple((space0, char('#'), many0(anychar)));
-    let (_input, (matchers, actions, _)) =
-        all_consuming(tuple((matchers, actions, opt(comment))))(input)
-            .finish()
-            .map_err(|e| anyhow::Error::msg(e.to_string()))?;
+///
+/// `regex_cache` is used to memoize the construction of regexes.
+pub fn parse_rule(input: &str, regex_cache: &mut RegexCache) -> anyhow::Result<Rule> {
+    let (matchers, after_matchers) = matchers(input, regex_cache)
+        .with_context(|| format!("at `{input}`: failed to parse matchers"))?;
+    let actions = actions(after_matchers)
+        .with_context(|| format!("at `{after_matchers}`: failed to parse actions"))?;
 
     Ok(Rule::new(matchers, actions))
 }
@@ -189,7 +360,7 @@ mod tests {
 
     #[test]
     fn parse_objc_matcher() {
-        let rule = parse_rule("stack.function:-[* -app").unwrap();
+        let rule = parse_rule("stack.function:-[* -app", &mut RegexCache::default()).unwrap();
 
         let frames = &[Frame::from_test(
             &json!({"function": "-[UIApplication sendAction:to:from:forEvent:] "}),
@@ -206,12 +377,16 @@ mod tests {
             Matcher::Exception(_) => unreachable!(),
         }
 
-        let _rule = parse_rule("stack.module:[foo:bar/* -app").unwrap();
+        let _rule = parse_rule("stack.module:[foo:bar/* -app", &mut Default::default()).unwrap();
     }
 
     #[test]
     fn invalid_app_matcher() {
-        let rule = parse_rule("app://../../src/some-file.ts -group -app").unwrap();
+        let rule = parse_rule(
+            "app://../../src/some-file.ts -group -app",
+            &mut Default::default(),
+        )
+        .unwrap();
 
         let frames = &[
             Frame::from_test(&json!({}), "native"),
