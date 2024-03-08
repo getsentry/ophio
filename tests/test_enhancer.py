@@ -1,6 +1,6 @@
 from typing import Any, Mapping, Optional, Sequence, Union
-import pytest
 
+import pytest
 from sentry_ophio.enhancers import Cache, Component, Enhancements
 
 # TODO: all this is copied from Sentry, and the Sentry side should still
@@ -85,7 +85,7 @@ def test_sentinel_and_prefix(action, type):
     enhancer = Enhancements.parse(f"function:foo {action}{type}", cache)
 
     frames = [create_match_frame({"function": "foo"}, "whatever")]
-    components = [Component(contributes=True,is_prefix_frame=False, is_sentinel_frame=False)]
+    components = [Component(contributes=True, is_prefix_frame=False, is_sentinel_frame=False)]
 
     assert not getattr(components[0], f"is_{type}_frame")
 
