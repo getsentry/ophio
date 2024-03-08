@@ -77,10 +77,17 @@ class Enhancements:
         """
 
     def update_frame_components_contributions(
-            self,
-            frames: Iterator[Frame],
-            components: list[Component]
+        self,
+        frames: Iterator[Frame],
+        components: list[Component]
     ) -> StacktraceState:
         """
-        TODO
+        Modifies a list of `Component`s according to the rules in this Enhancements object.
+
+        The returned list contains the new values of the "category" and
+        "in_app" fields for each frame.
+
+        :param frames: The list of frames to analyze.
+        :param components: The list of `Component`s to modify.
+                           The `Component` objects are mutated in place.
         """
