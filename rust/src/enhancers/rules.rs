@@ -77,6 +77,8 @@ impl Rule {
     }
 
     /// Checks whether an exception matches this rule, i.e., if it matches all exception matchers.
+    ///
+    /// This defaults to `true` if no exception matcher exists.
     pub fn matches_exception(&self, exception_data: &ExceptionData) -> bool {
         self.0
             .exception_matchers
@@ -85,6 +87,8 @@ impl Rule {
     }
 
     /// Checks whether the frame at `frames[idx]` matches this rule, i.e., if it matches all frame matchers.
+    ///
+    /// This defaults to `true` if no frame matcher exists.
     pub fn matches_frame(&self, frames: &[Frame], idx: usize) -> bool {
         self.0
             .frame_matchers
