@@ -1,6 +1,7 @@
 from typing import Any, Mapping, Optional, Sequence, Union
 
-from sentry_ophio.enhancers import Cache, Enhancements
+import pytest
+from sentry_ophio.enhancers import Cache, Component, Enhancements
 
 # TODO: all this is copied from Sentry, and the Sentry side should still
 # be responsible for the `create_match_frame`
@@ -75,3 +76,20 @@ def test_simple_enhancer():
 
     modified_frames = enhancer.apply_modifications_to_frames(iter(frames), exception_data)
     print(modified_frames)
+
+
+@pytest.mark.parametrize("action", ["+", "-"])
+@pytest.mark.parametrize("type", ["prefix", "sentinel"])
+def test_sentinel_and_prefix(action, type):
+    cache = Cache(1_000)
+    enhancer = Enhancements.parse(f"function:foo {action}{type}", cache)
+
+    frames = [create_match_frame({"function": "foo"}, "whatever")]
+    components = [Component(contributes=True, is_prefix_frame=False, is_sentinel_frame=False)]
+
+    assert not getattr(components[0], f"is_{type}_frame")
+
+    enhancer.update_frame_components_contributions(iter(frames), components)
+
+    expected = action == "+"
+    assert getattr(components[0], f"is_{type}_frame") is expected
