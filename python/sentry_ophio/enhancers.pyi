@@ -3,6 +3,17 @@ from typing import Any, Iterator
 Frame = dict[str, Any]
 ModificationResult = tuple[str | None, bool | None]
 
+class Component:
+    contributes: bool
+    is_prefix_frame: bool
+    is_sentinel_frame: bool
+    hint: str | None
+
+class StacktraceState:
+    max_frames: int
+    min_frames: int
+    invert_stacktrace: bool
+
 
 class Cache:
     """
@@ -63,4 +74,13 @@ class Enhancements:
         :param frames: The list of frames to modify.
         :param exception_data: Exception data to match against rules. Supported
                                fields are "ty", "value", and "mechanism".
+        """
+
+    def update_frame_components_contributions(
+            self,
+            frames: Iterator[Frame],
+            components: list[Component]
+    ) -> StacktraceState:
+        """
+        TODO
         """
