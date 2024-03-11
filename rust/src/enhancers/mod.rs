@@ -303,22 +303,22 @@ fn update_components_for_min_frames(
     components: &[Component],
     min_frames: StacktraceVariable<usize>,
 ) -> (bool, Option<String>) {
+    let total_contributes = components
+        .iter()
+        .map(|c| c.contributes.unwrap_or_default() as usize)
+        .sum();
+
+    let mut hint = None;
+    let mut contributes = total_contributes > 0;
+
     let StacktraceVariable {
         value: min_frames,
         setter,
     } = min_frames;
 
-    let mut hint = None;
-
     if min_frames == 0 {
-        return (false, hint);
+        return (contributes, hint);
     }
-
-    let total_contributes = components
-        .iter()
-        .map(|c| c.contributes.unwrap_or_default() as usize)
-        .sum();
-    let mut contributes = total_contributes > 0;
 
     if (0..min_frames).contains(&total_contributes) {
         let mut hint_str = format!("discarded because stack trace only contains {total_contributes} frame{} which is under the configured threshold", if total_contributes == 1 { "" } else {"s"});
