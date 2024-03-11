@@ -55,7 +55,7 @@ class Enhancements:
         """
     def apply_modifications_to_frames(
         self,
-        frames: Iterator[Frame],
+        frames: list[Frame],
         exception_data: dict[str, str | None],
     ) -> list[ModificationResult]:
         """
@@ -69,7 +69,7 @@ class Enhancements:
                                fields are "ty", "value", and "mechanism".
         """
     def update_frame_components_contributions(
-        self, frames: Iterator[Frame], components: list[Component]
+        self, frames: list[Frame], components: list[Component]
     ) -> StacktraceState:
         """
         Modifies a list of `Component`s according to the rules in this Enhancements object.

@@ -74,7 +74,7 @@ def test_simple_enhancer():
     ]
     exception_data = {"ty": None, "value": None, "mechanism": None}
 
-    modified_frames = enhancer.apply_modifications_to_frames(iter(frames), exception_data)
+    modified_frames = enhancer.apply_modifications_to_frames(frames, exception_data)
     print(modified_frames)
 
 
@@ -89,7 +89,7 @@ def test_sentinel_and_prefix(action, type):
 
     assert not getattr(components[0], f"is_{type}_frame")
 
-    enhancer.update_frame_components_contributions(iter(frames), components)
+    enhancer.update_frame_components_contributions(frames, components)
 
     expected = action == "+"
     assert getattr(components[0], f"is_{type}_frame") is expected
