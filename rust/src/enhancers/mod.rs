@@ -303,7 +303,7 @@ fn update_components_for_min_frames(
     components: &[Component],
     min_frames: StacktraceVariable<usize>,
 ) -> (bool, Option<String>) {
-    let total_contributes = components
+    let total_contributes: usize = components
         .iter()
         .map(|c| c.contributes.unwrap_or_default() as usize)
         .sum();
@@ -320,7 +320,7 @@ fn update_components_for_min_frames(
         return (contributes, hint);
     }
 
-    if (0..min_frames).contains(&total_contributes) {
+    if total_contributes > 0 && total_contributes < min_frames {
         let mut hint_str = format!("discarded because stack trace only contains {total_contributes} frame{} which is under the configured threshold", if total_contributes == 1 { "" } else {"s"});
 
         if let Some(rule) = setter {
