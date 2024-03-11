@@ -85,11 +85,12 @@ def test_sentinel_and_prefix(action, type):
     enhancer = Enhancements.parse(f"function:foo {action}{type}", cache)
 
     frames = [create_match_frame({"function": "foo"}, "whatever")]
-    components = [Component(contributes=True, is_prefix_frame=False, is_sentinel_frame=False)]
+    frame_components = [Component(contributes=None, is_prefix_frame=False, is_sentinel_frame=False)]
 
-    assert not getattr(components[0], f"is_{type}_frame")
+    assert not getattr(frame_components[0], f"is_{type}_frame")
 
-    enhancer.update_frame_components_contributions(frames, components)
+    exception_data = {"ty": None, "value": None, "mechanism": None}
+    enhancer.assemble_stacktrace_component(frames, exception_data,frame_components)
 
     expected = action == "+"
-    assert getattr(components[0], f"is_{type}_frame") is expected
+    assert getattr(frame_components[0], f"is_{type}_frame") is expected

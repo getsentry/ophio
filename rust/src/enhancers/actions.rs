@@ -118,8 +118,8 @@ impl FlagAction {
         for component in components {
             match self.ty {
                 FlagActionType::Group => {
-                    if component.contributes != self.flag {
-                        component.contributes = self.flag;
+                    if component.contributes != Some(self.flag) {
+                        component.contributes = Some(self.flag);
                         let state = if self.flag { "un-ignored" } else { "ignored" };
                         component.hint = Some(format!("{state} by {rule_hint} ({rule})"));
                     }

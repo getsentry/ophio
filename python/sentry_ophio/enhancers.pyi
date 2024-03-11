@@ -1,4 +1,4 @@
-from typing import Any, Iterator
+from typing import Any
 
 Frame = dict[str, Any]
 ModificationResult = tuple[str | None, bool | None]
@@ -9,9 +9,9 @@ class Component:
     is_sentinel_frame: bool
     hint: str | None
 
-class StacktraceState:
-    max_frames: int
-    min_frames: int
+class AssembleResult:
+    contributes: bool | None
+    hint: str | None
     invert_stacktrace: bool
 
 class Cache:
@@ -68,16 +68,22 @@ class Enhancements:
         :param exception_data: Exception data to match against rules. Supported
                                fields are "ty", "value", and "mechanism".
         """
-    def update_frame_components_contributions(
-        self, frames: list[Frame], components: list[Component]
-    ) -> StacktraceState:
+    def assemble_stacktrace_component(
+        self,
+        frames: list[Frame],
+        exception_data: dict[str, str | None],
+        components: list[Component],
+    ) -> AssembleResult:
         """
         Modifies a list of `Component`s according to the rules in this Enhancements object.
 
-        The returned list contains the new values of the "category" and
-        "in_app" fields for each frame.
+        It returns an `AssembleResult` containing attributes of a resulting
+        `stacktrace` grouping component,
+        which has to be assembled outside of this function.
 
         :param frames: The list of frames to analyze.
+        :param exception_data: Exception data to match against rules. Supported
+                               fields are "ty", "value", and "mechanism".
         :param components: The list of `Component`s to modify.
                            The `Component` objects are mutated in place.
         """
