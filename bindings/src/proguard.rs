@@ -45,12 +45,14 @@ impl ProguardMapper {
 
     /// Returns the UUID of the file.
     #[getter]
-    pub fn uuid<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
+    pub fn uuid<'p>(&self, py: Python<'p>) -> PyResult<Bound<'p, PyAny>> {
         let uuid = self.inner.get().mapping.uuid();
 
-        let bytes = PyBytes::new(py, uuid.as_bytes());
-        let kwargs = [("bytes", bytes)].into_py_dict(py);
-        py.import("uuid")?.getattr("UUID")?.call((), Some(kwargs))
+        let bytes = PyBytes::new_bound(py, uuid.as_bytes());
+        let kwargs = [("bytes", bytes)].into_py_dict_bound(py);
+        py.import_bound("uuid")?
+            .getattr("UUID")?
+            .call((), Some(&kwargs))
     }
 
     /// True if the file contains line information.

@@ -4,7 +4,7 @@ mod enhancers;
 mod proguard;
 
 #[pymodule]
-fn _bindings(_py: Python, m: &PyModule) -> PyResult<()> {
+fn _bindings(_py: Python, m: Bound<PyModule>) -> PyResult<()> {
     m.add_class::<enhancers::Cache>()?;
     m.add_class::<enhancers::Component>()?;
     m.add_class::<enhancers::Enhancements>()?;

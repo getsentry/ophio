@@ -3,7 +3,7 @@
 //! See `enhancers.pyi` for documentation on classes and functions.
 
 use pyo3::prelude::*;
-use pyo3::types::PyIterator;
+use pyo3::types::PyList;
 use rust_ophio::enhancers;
 
 #[derive(FromPyObject)]
@@ -21,7 +21,7 @@ pub struct Frame {
 struct OptStr(Option<enhancers::StringField>);
 
 impl FromPyObject<'_> for OptStr {
-    fn extract(ob: &PyAny) -> PyResult<Self> {
+    fn extract_bound(ob: &Bound<'_, PyAny>) -> PyResult<Self> {
         if ob.is_none() {
             return Ok(Self(None));
         }
@@ -114,10 +114,13 @@ impl Enhancements {
     fn apply_modifications_to_frames(
         &self,
         py: Python,
-        frames: &PyIterator,
+        frames: Bound<'_, PyList>,
         exception_data: ExceptionData,
     ) -> PyResult<Vec<PyObject>> {
-        let mut frames: Vec<_> = frames.map(convert_frame_from_py).collect::<PyResult<_>>()?;
+        let mut frames: Vec<_> = frames
+            .into_iter()
+            .map(convert_frame_from_py)
+            .collect::<PyResult<_>>()?;
 
         let exception_data = enhancers::ExceptionData {
             ty: exception_data.ty.0,
@@ -138,10 +141,13 @@ impl Enhancements {
 
     fn update_frame_components_contributions(
         &self,
-        frames: &PyIterator,
+        frames: Bound<'_, PyList>,
         mut grouping_components: Vec<PyRefMut<Component>>,
     ) -> PyResult<StacktraceState> {
-        let frames: Vec<_> = frames.map(convert_frame_from_py).collect::<PyResult<_>>()?;
+        let frames: Vec<_> = frames
+            .into_iter()
+            .map(convert_frame_from_py)
+            .collect::<PyResult<_>>()?;
         let mut components: Vec<_> = grouping_components
             .iter()
             .map(|c| convert_component_from_py(c))
@@ -168,8 +174,8 @@ impl Enhancements {
     }
 }
 
-fn convert_frame_from_py(frame: PyResult<&PyAny>) -> PyResult<enhancers::Frame> {
-    let frame: Frame = frame?.extract()?;
+fn convert_frame_from_py(frame: Bound<'_, PyAny>) -> PyResult<enhancers::Frame> {
+    let frame: Frame = frame.extract()?;
     let frame = enhancers::Frame {
         category: frame.category.0,
         family: enhancers::Families::new(frame.family.0.as_deref().unwrap_or("other")),
