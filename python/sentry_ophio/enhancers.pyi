@@ -69,7 +69,10 @@ class Enhancements:
                                fields are "ty", "value", and "mechanism".
         """
     def update_frame_components_contributions(
-        self, frames: Iterator[Frame], components: list[Component]
+        self,
+        frames: Iterator[Frame],
+        exception_data: dict[str, str | None],
+        components: list[Component],
     ) -> StacktraceState:
         """
         Modifies a list of `Component`s according to the rules in this Enhancements object.
@@ -78,6 +81,8 @@ class Enhancements:
         "in_app" fields for each frame.
 
         :param frames: The list of frames to analyze.
+        :param exception_data: Exception data to match against rules. Supported
+                               fields are "ty", "value", and "mechanism".
         :param components: The list of `Component`s to modify.
                            The `Component` objects are mutated in place.
         """

@@ -146,6 +146,7 @@ impl Enhancements {
         &self,
         components: &mut [Component],
         frames: &[Frame],
+        exception_data: &ExceptionData,
     ) -> StacktraceState {
         let mut stacktrace_state = StacktraceState::default();
 
@@ -165,6 +166,9 @@ impl Enhancements {
 
         // Apply direct frame actions and update the stack state alongside
         for rule in &self.updater_rules {
+            if !rule.matches_exception(exception_data) {
+                continue;
+            }
             for idx in 0..frames.len() {
                 if rule.matches_frame(frames, idx) {
                     rule.update_frame_components_contributions(components, idx);

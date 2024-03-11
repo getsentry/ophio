@@ -139,6 +139,7 @@ impl Enhancements {
     fn update_frame_components_contributions(
         &self,
         frames: &PyIterator,
+        exception_data: ExceptionData,
         mut grouping_components: Vec<PyRefMut<Component>>,
     ) -> PyResult<StacktraceState> {
         let frames: Vec<_> = frames.map(convert_frame_from_py).collect::<PyResult<_>>()?;
@@ -147,9 +148,15 @@ impl Enhancements {
             .map(|c| convert_component_from_py(c))
             .collect();
 
-        let stacktrace_state = self
-            .0
-            .update_frame_components_contributions(&mut components, &frames);
+        let exception_data = enhancers::ExceptionData {
+            ty: exception_data.ty.0,
+            value: exception_data.value.0,
+            mechanism: exception_data.mechanism.0,
+        };
+
+        let stacktrace_state =
+            self.0
+                .update_frame_components_contributions(&mut components, &frames, &exception_data);
 
         for (py_component, rust_component) in
             grouping_components.iter_mut().zip(components.into_iter())
