@@ -4,13 +4,13 @@ Frame = dict[str, Any]
 ModificationResult = tuple[str | None, bool | None]
 
 class Component:
-    contributes: bool
+    contributes: bool | None
     is_prefix_frame: bool
     is_sentinel_frame: bool
     hint: str | None
 
 class AssembleResult:
-    contributes: bool | None
+    contributes: bool
     hint: str | None
     invert_stacktrace: bool
 

@@ -34,7 +34,7 @@ impl FromPyObject<'_> for OptStr {
 #[pyclass]
 pub struct AssembleResult {
     #[pyo3(get)]
-    contributes: Option<bool>,
+    contributes: bool,
     #[pyo3(get)]
     hint: Option<String>,
     #[pyo3(get)]

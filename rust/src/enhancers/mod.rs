@@ -40,7 +40,7 @@ pub struct ExceptionData {
 
 /// The result of the `assemble_stacktrace_component` fn.
 pub struct AssembleResult {
-    pub contributes: Option<bool>,
+    pub contributes: bool,
     pub hint: Option<String>,
     pub invert_stacktrace: bool,
 }
@@ -302,23 +302,24 @@ fn update_components_for_max_frames(
 fn update_components_for_min_frames(
     components: &[Component],
     min_frames: StacktraceVariable<usize>,
-) -> (Option<bool>, Option<String>) {
+) -> (bool, Option<String>) {
     let StacktraceVariable {
         value: min_frames,
         setter,
     } = min_frames;
 
-    let mut contributes = None;
     let mut hint = None;
 
     if min_frames == 0 {
-        return (contributes, hint);
+        return (false, hint);
     }
 
     let total_contributes = components
         .iter()
         .map(|c| c.contributes.unwrap_or_default() as usize)
         .sum();
+    let mut contributes = total_contributes > 0;
+
     if (0..min_frames).contains(&total_contributes) {
         let mut hint_str = format!("discarded because stack trace only contains {total_contributes} frame{} which is under the configured threshold", if total_contributes == 1 { "" } else {"s"});
 
@@ -326,7 +327,7 @@ fn update_components_for_min_frames(
             write!(&mut hint_str, " by stack trace rule ({rule})").unwrap();
         }
 
-        contributes = Some(false);
+        contributes = false;
         hint = Some(hint_str);
     }
 
