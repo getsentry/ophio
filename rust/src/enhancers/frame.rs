@@ -34,7 +34,7 @@ pub struct Frame {
     /// The [`Rule`] that last modified this frame's `in_app` field.
     ///
     /// This is used for keeping track of grouping contribution information,
-    /// see [`update_frame_components_contributions`](super::Enhancements::update_frame_components_contributions).
+    /// see [`update_frame_components_contributions`](super::Enhancements::assemble_stacktrace_component).
     pub in_app_last_changed: Option<Rule>,
 }
 
