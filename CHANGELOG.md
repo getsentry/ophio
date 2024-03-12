@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0
+
+### Various fixes & improvements
+
+- Add the complete `assemble_stacktrace_component` logic (#46) by @Swatinem
+- Switch to new PyO3 `Bound` API (#45) by @Swatinem
+- Document matching behavior without any matcher (#44) by @Swatinem
+- Implement `update_frame_components_contributions` (#42) by @Swatinem
+- Do a `cargo update` (#43) by @Swatinem
+- ref(enhancers): Replace nom parser with handwritten recursive descent (#40) by @loewenheim
+
 ## 0.1.5
 
 ### Various fixes & improvements
