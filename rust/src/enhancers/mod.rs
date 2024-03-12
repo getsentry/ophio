@@ -8,6 +8,8 @@
 //!
 //! They are applied to stacktraces with [`apply_modifications_to_frames`](Enhancements::apply_modifications_to_frames).
 
+use std::fmt::Write;
+
 use smol_str::SmolStr;
 
 mod actions;
@@ -34,6 +36,13 @@ pub struct ExceptionData {
     pub value: Option<SmolStr>,
     /// The exception's mechanism.
     pub mechanism: Option<SmolStr>,
+}
+
+/// The result of the `assemble_stacktrace_component` fn.
+pub struct AssembleResult {
+    pub contributes: bool,
+    pub hint: Option<String>,
+    pub invert_stacktrace: bool,
 }
 
 /// A collection of [Rules](Rule) that modify the stacktrace and update grouping information.
@@ -141,12 +150,16 @@ impl Enhancements {
         }
     }
 
-    /// Updates contribution metadata in `components` based on the rules in this collection.
-    pub fn update_frame_components_contributions(
+    /// Assembles a `stacktrace` grouping component out of the given
+    /// `frame` [`Component`]s and [`Frame`]s.
+    ///
+    /// It also updates the [`Component`]s `contributes`, `hint` and other attributes.
+    pub fn assemble_stacktrace_component(
         &self,
         components: &mut [Component],
         frames: &[Frame],
-    ) -> StacktraceState {
+        exception_data: &ExceptionData,
+    ) -> AssembleResult {
         let mut stacktrace_state = StacktraceState::default();
 
         // First, update the `in_app` hints. We have kept track of which rule last set the
@@ -165,6 +178,10 @@ impl Enhancements {
 
         // Apply direct frame actions and update the stack state alongside
         for rule in &self.updater_rules {
+            if !rule.matches_exception(exception_data) {
+                continue;
+            }
+
             for idx in 0..frames.len() {
                 if rule.matches_frame(frames, idx) {
                     rule.update_frame_components_contributions(components, idx);
@@ -174,47 +191,19 @@ impl Enhancements {
         }
 
         // Use the stack state to update frame contributions again to trim
-        // down to max-frames.  min-frames is handled on the other hand for
-        // the entire stacktrace later.
-        let max_frames = stacktrace_state.max_frames.value;
+        // down to `max-frames`.
+        update_components_for_max_frames(components, stacktrace_state.max_frames);
 
-        if max_frames > 0 {
-            let mut ignored = 0;
+        // `min-frames` is handled on the other hand for
+        // the entire stacktrace.
+        let (contributes, hint) =
+            update_components_for_min_frames(components, stacktrace_state.min_frames);
 
-            for component in components.iter_mut().rev() {
-                if !component.contributes {
-                    continue;
-                }
-
-                ignored += 1;
-
-                if ignored <= max_frames {
-                    continue;
-                }
-
-                let hint = format!(
-                    "ignored because only {} {} considered",
-                    max_frames,
-                    if max_frames != 1 {
-                        "frames are"
-                    } else {
-                        "frame is"
-                    },
-                );
-
-                let hint = stacktrace_state
-                    .max_frames
-                    .setter
-                    .as_ref()
-                    .map(|r| format!("{hint} by stack trace rule ({r})"))
-                    .unwrap_or(hint);
-
-                component.contributes = false;
-                component.hint = Some(hint);
-            }
+        AssembleResult {
+            contributes,
+            hint,
+            invert_stacktrace: stacktrace_state.invert_stacktrace.value,
         }
-
-        stacktrace_state
     }
 
     /// Returns an iterator over all rules in this collection.
@@ -246,7 +235,7 @@ impl Extend<Rule> for Enhancements {
 
 #[derive(Debug, Clone, Default)]
 pub struct Component {
-    pub contributes: bool,
+    pub contributes: Option<bool>,
     pub is_prefix_frame: bool,
     pub is_sentinel_frame: bool,
     pub hint: Option<String>,
@@ -263,6 +252,86 @@ pub struct StacktraceState {
     pub max_frames: StacktraceVariable<usize>,
     pub min_frames: StacktraceVariable<usize>,
     pub invert_stacktrace: StacktraceVariable<bool>,
+}
+
+fn update_components_for_max_frames(
+    components: &mut [Component],
+    max_frames: StacktraceVariable<usize>,
+) {
+    let StacktraceVariable {
+        value: max_frames,
+        setter,
+    } = max_frames;
+
+    if max_frames == 0 {
+        return;
+    }
+
+    let mut ignored = 0;
+
+    for component in components.iter_mut().rev() {
+        if !component.contributes.unwrap_or_default() {
+            continue;
+        }
+
+        ignored += 1;
+
+        if ignored <= max_frames {
+            continue;
+        }
+
+        let mut hint = format!(
+            "ignored because only {} {} considered",
+            max_frames,
+            if max_frames != 1 {
+                "frames are"
+            } else {
+                "frame is"
+            },
+        );
+
+        if let Some(rule) = &setter {
+            write!(&mut hint, " by stack trace rule ({rule})").unwrap();
+        }
+
+        component.contributes = Some(false);
+        component.hint = Some(hint);
+    }
+}
+
+fn update_components_for_min_frames(
+    components: &[Component],
+    min_frames: StacktraceVariable<usize>,
+) -> (bool, Option<String>) {
+    let total_contributes: usize = components
+        .iter()
+        .map(|c| c.contributes.unwrap_or_default() as usize)
+        .sum();
+
+    let mut hint = None;
+    let mut contributes = total_contributes > 0;
+
+    let StacktraceVariable {
+        value: min_frames,
+        setter,
+    } = min_frames;
+
+    if min_frames == 0 {
+        return (contributes, hint);
+    }
+
+    if total_contributes > 0 && total_contributes < min_frames {
+        let mut hint_str = format!("discarded because stack trace only contains {total_contributes} frame{} which is under the configured threshold", if total_contributes == 1 { "" } else {"s"});
+
+        if let Some(rule) = setter {
+            write!(&mut hint_str, " by stack trace rule ({rule})").unwrap();
+        }
+
+        contributes = false;
+        hint = Some(hint_str);
+    }
+
+    (contributes, hint)
 }
 
 #[cfg(test)]

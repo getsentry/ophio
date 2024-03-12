@@ -157,7 +157,7 @@ fn flag_action(input: &str) -> anyhow::Result<(FlagAction, &str)> {
     let (range, after_range) = if let Some(rest) = input.strip_prefix('^') {
         (Some(Range::Up), rest)
     } else if let Some(rest) = input.strip_prefix('v') {
-        (Some(Range::Up), rest)
+        (Some(Range::Down), rest)
     } else {
         (None, input)
     };

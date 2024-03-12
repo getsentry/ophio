@@ -32,11 +32,11 @@ impl FromPyObject<'_> for OptStr {
 }
 
 #[pyclass]
-pub struct StacktraceState {
+pub struct AssembleResult {
     #[pyo3(get)]
-    max_frames: usize,
+    contributes: bool,
     #[pyo3(get)]
-    min_frames: usize,
+    hint: Option<String>,
     #[pyo3(get)]
     invert_stacktrace: bool,
 }
@@ -44,7 +44,7 @@ pub struct StacktraceState {
 #[pyclass]
 pub struct Component {
     #[pyo3(get, set)]
-    contributes: bool,
+    contributes: Option<bool>,
     #[pyo3(get, set)]
     is_prefix_frame: bool,
     #[pyo3(get, set)]
@@ -56,7 +56,7 @@ pub struct Component {
 #[pymethods]
 impl Component {
     #[new]
-    fn new(contributes: bool, is_prefix_frame: bool, is_sentinel_frame: bool) -> Self {
+    fn new(is_prefix_frame: bool, is_sentinel_frame: bool, contributes: Option<bool>) -> Self {
         Self {
             contributes,
             is_prefix_frame,
@@ -139,23 +139,31 @@ impl Enhancements {
         Ok(result)
     }
 
-    fn update_frame_components_contributions(
+    fn assemble_stacktrace_component(
         &self,
         frames: Bound<'_, PyList>,
+        exception_data: ExceptionData,
         mut grouping_components: Vec<PyRefMut<Component>>,
-    ) -> PyResult<StacktraceState> {
+    ) -> PyResult<AssembleResult> {
         let frames: Vec<_> = frames
             .into_iter()
             .map(convert_frame_from_py)
             .collect::<PyResult<_>>()?;
+
+        let exception_data = enhancers::ExceptionData {
+            ty: exception_data.ty.0,
+            value: exception_data.value.0,
+            mechanism: exception_data.mechanism.0,
+        };
+
         let mut components: Vec<_> = grouping_components
             .iter()
             .map(|c| convert_component_from_py(c))
             .collect();
 
-        let stacktrace_state = self
-            .0
-            .update_frame_components_contributions(&mut components, &frames);
+        let assemble_result =
+            self.0
+                .assemble_stacktrace_component(&mut components, &frames, &exception_data);
 
         for (py_component, rust_component) in
             grouping_components.iter_mut().zip(components.into_iter())
@@ -166,10 +174,10 @@ impl Enhancements {
             py_component.hint = rust_component.hint;
         }
 
-        Ok(StacktraceState {
-            max_frames: stacktrace_state.max_frames.value,
-            min_frames: stacktrace_state.min_frames.value,
-            invert_stacktrace: stacktrace_state.invert_stacktrace.value,
+        Ok(AssembleResult {
+            contributes: assemble_result.contributes,
+            hint: assemble_result.hint,
+            invert_stacktrace: assemble_result.invert_stacktrace,
         })
     }
 }
