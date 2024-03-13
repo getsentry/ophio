@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Self
 
 ExceptionData = dict[str, bytes | None]
 Frame = dict[str, Any]
@@ -13,7 +13,7 @@ class Component:
 
     def __new__(
         cls, is_prefix_frame: bool, is_sentinel_frame: bool, contributes: bool | None
-    ): ...
+    ) -> Self: ...
 
 
 class AssembleResult:
