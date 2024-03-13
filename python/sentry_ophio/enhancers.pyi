@@ -1,5 +1,6 @@
 from typing import Any
 
+ExceptionData = dict[str, bytes | None]
 Frame = dict[str, Any]
 ModificationResult = tuple[str | None, bool | None]
 
@@ -56,7 +57,7 @@ class Enhancements:
     def apply_modifications_to_frames(
         self,
         frames: list[Frame],
-        exception_data: dict[str, str | None],
+        exception_data: ExceptionData,
     ) -> list[ModificationResult]:
         """
         Modifies a list of frames according to the rules in this Enhancements object.
@@ -71,7 +72,7 @@ class Enhancements:
     def assemble_stacktrace_component(
         self,
         frames: list[Frame],
-        exception_data: dict[str, str | None],
+        exception_data: ExceptionData,
         components: list[Component],
     ) -> AssembleResult:
         """
