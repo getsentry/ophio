@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.3
+
+### Various fixes & improvements
+
+- fix(bindings): Add type info for Component.__new__ (#48) by @loewenheim
+- Fix typing for pyi `ExceptionData` (#47) by @Swatinem
+
 ## 0.2.0
 
 ### Various fixes & improvements
