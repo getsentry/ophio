@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.5
+
+### Various fixes & improvements
+
+- Fully replicate `in_app` hint logic (#49) by @Swatinem
+
 ## 0.2.3
 
 ### Various fixes & improvements
