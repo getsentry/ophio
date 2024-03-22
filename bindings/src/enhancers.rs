@@ -16,6 +16,7 @@ pub struct Frame {
     package: OptStr,
     path: OptStr,
     in_app: Option<bool>,
+    orig_in_app: Option<i8>,
 }
 
 struct OptStr(Option<enhancers::StringField>);
@@ -193,7 +194,11 @@ fn convert_frame_from_py(frame: Bound<'_, PyAny>) -> PyResult<enhancers::Frame> 
         path: frame.path.0,
 
         in_app: frame.in_app,
-        in_app_last_changed: None,
+        orig_in_app: frame.orig_in_app.map(|in_app| match in_app {
+            0 => Some(false),
+            1 => Some(true),
+            _ => None,
+        }),
     };
     Ok(frame)
 }

@@ -95,12 +95,25 @@ impl FlagAction {
         slice.unwrap_or_default().iter_mut()
     }
 
+    /// Returns an iterator over a subslice of `items`, depending on `self.range`.
+    ///
+    /// * `self.range` == `None`: returns just `items[idx]`, if it exists.
+    /// * `self.range` == `Some(Up)`: returns `items[idx+1..]`.
+    /// * `self.range` == `Some(Down)`: returns `items[..idx]`.
+    fn slice_to_range<'f, I>(&self, items: &'f [I], idx: usize) -> impl Iterator<Item = &'f I> {
+        let slice = match self.range {
+            Some(Range::Up) => items.get(idx + 1..),
+            Some(Range::Down) => items.get(..idx),
+            None => items.get(idx..idx + 1),
+        };
+        slice.unwrap_or_default().iter()
+    }
+
     /// Applies this action's modification to `frames` at the index `idx`.
-    pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize, rule: &Rule) {
+    pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize, _rule: &Rule) {
         if self.ty == FlagActionType::App {
             for frame in self.slice_to_range_mut(frames, idx) {
                 frame.in_app = Some(self.flag);
-                frame.in_app_last_changed = Some(rule.clone());
             }
         }
     }
@@ -109,13 +122,15 @@ impl FlagAction {
     fn update_frame_components_contributions(
         &self,
         components: &mut [Component],
+        frames: &[Frame],
         idx: usize,
         rule: &Rule,
     ) {
         let rule_hint = "stack trace rule";
         let components = self.slice_to_range_mut(components, idx);
+        let frames = self.slice_to_range(frames, idx);
 
-        for component in components {
+        for (component, frame) in components.zip(frames) {
             match self.ty {
                 FlagActionType::Group => {
                     if component.contributes != Some(self.flag) {
@@ -125,7 +140,15 @@ impl FlagAction {
                     }
                 }
                 FlagActionType::App => {
-                    //See Enhancements::update_frame_components_contributions
+                    if in_app_changed(frame, component, self.flag) {
+                        let state = if frame.in_app.unwrap_or_default() {
+                            "in-app"
+                        } else {
+                            "out of app"
+                        };
+                        component.hint =
+                            Some(format!("marked {state} by stack trace rule ({rule})"));
+                    }
                 }
                 FlagActionType::Prefix => {
                     component.is_prefix_frame = self.flag;
@@ -139,6 +162,15 @@ impl FlagAction {
                 }
             }
         }
+    }
+}
+
+/// Whether the `in_app` flag is considered to have changed
+fn in_app_changed(frame: &Frame, component: &Component, flag: bool) -> bool {
+    if let Some(orig_in_app) = frame.orig_in_app {
+        orig_in_app != frame.in_app
+    } else {
+        Some(flag) == component.contributes
     }
 }
 
@@ -246,11 +278,12 @@ impl Action {
     pub fn update_frame_components_contributions(
         &self,
         components: &mut [Component],
+        frames: &[Frame],
         idx: usize,
         rule: &Rule,
     ) {
         if let Self::Flag(action) = self {
-            action.update_frame_components_contributions(components, idx, rule);
+            action.update_frame_components_contributions(components, frames, idx, rule);
         }
     }
 

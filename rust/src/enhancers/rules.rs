@@ -121,9 +121,14 @@ impl Rule {
     }
 
     /// Updates grouping component contribution information.
-    pub fn update_frame_components_contributions(&self, components: &mut [Component], idx: usize) {
+    pub fn update_frame_components_contributions(
+        &self,
+        components: &mut [Component],
+        frames: &[Frame],
+        idx: usize,
+    ) {
         for action in &self.0.actions {
-            action.update_frame_components_contributions(components, idx, self);
+            action.update_frame_components_contributions(components, frames, idx, self);
         }
     }
 }

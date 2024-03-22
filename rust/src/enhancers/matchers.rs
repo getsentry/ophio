@@ -606,4 +606,25 @@ mod tests {
             "native"
         )));
     }
+
+    #[test]
+    fn test_negated_display() {
+        let input = r#"!function:log_demo::* -group"#;
+        let enhancements = Enhancements::parse(input, &mut Default::default()).unwrap();
+        let rule = enhancements.all_rules.into_iter().next().unwrap();
+
+        assert_eq!(rule.to_string(), "!function:log_demo::* -group");
+    }
+
+    #[test]
+    fn test_case_sensitive_display() {
+        let input = r#"family:native package:**/Containers/Bundle/Application/**            +app"#;
+        let enhancements = Enhancements::parse(input, &mut Default::default()).unwrap();
+        let rule = enhancements.all_rules.into_iter().next().unwrap();
+
+        assert_eq!(
+            rule.to_string(),
+            "family:native package:**/Containers/Bundle/Application/** +app"
+        );
+    }
 }
