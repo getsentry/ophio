@@ -4,7 +4,7 @@ use std::fmt;
 
 use smol_str::SmolStr;
 
-use super::{families::Families, Rule};
+use super::families::Families;
 
 pub type StringField = SmolStr;
 
@@ -25,17 +25,15 @@ pub struct Frame {
     /// The frame's path.
     pub path: Option<StringField>,
 
-    /// The frame's in_app flag.
+    /// The frame's `in_app` flag.
     ///
     /// This denotes whether we consider this frame to have
     /// originated from within the user's code (`true`) or from
     /// system libraries, frameworks, &c. (`false`).
     pub in_app: Option<bool>,
-    /// The [`Rule`] that last modified this frame's `in_app` field.
-    ///
-    /// This is used for keeping track of grouping contribution information,
-    /// see [`update_frame_components_contributions`](super::Enhancements::assemble_stacktrace_component).
-    pub in_app_last_changed: Option<Rule>,
+
+    /// The original `in_app` flag which was set before any grouping code ran.
+    pub orig_in_app: Option<Option<bool>>,
 }
 
 /// The name of a string-valued field in a frame.
@@ -91,28 +89,27 @@ impl Frame {
                     .and_then(|s| s.as_str())
                     .unwrap_or(platform),
             ),
+
             function: raw_frame
                 .get("function")
                 .and_then(|s| s.as_str())
                 .map(SmolStr::new),
-            in_app: raw_frame.get("in_app").and_then(|s| s.as_bool()),
-
             module: raw_frame
                 .get("module")
                 .and_then(|s| s.as_str())
                 .map(SmolStr::new),
-
             package: raw_frame
                 .get("package")
                 .and_then(|s| s.as_str())
                 .map(|s| SmolStr::new(s.replace('\\', "/").to_lowercase())),
-
             path: raw_frame
                 .get("abs_path")
                 .or(raw_frame.get("filename"))
                 .and_then(|s| s.as_str())
                 .map(|s| SmolStr::new(s.replace('\\', "/").to_lowercase())),
-            in_app_last_changed: None,
+
+            in_app: raw_frame.get("in_app").and_then(|s| s.as_bool()),
+            orig_in_app: None,
         }
     }
 }

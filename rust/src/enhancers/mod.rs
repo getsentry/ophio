@@ -162,20 +162,6 @@ impl Enhancements {
     ) -> AssembleResult {
         let mut stacktrace_state = StacktraceState::default();
 
-        // First, update the `in_app` hints. We have kept track of which rule last set the
-        // `in_app` field of each frame, so we don't need to iterate over the rules again for this.
-        for (component, frame) in components.iter_mut().zip(frames.iter()) {
-            if let Some(rule) = frame.in_app_last_changed.as_ref() {
-                // in_app is definitely set, otherwise `in_app_last_changed` would be `None`
-                let state = if frame.in_app.unwrap() {
-                    "in-app"
-                } else {
-                    "out of app"
-                };
-                component.hint = Some(format!("marked {state} by stack trace rule ({rule})"));
-            }
-        }
-
         // Apply direct frame actions and update the stack state alongside
         for rule in &self.updater_rules {
             if !rule.matches_exception(exception_data) {
@@ -184,7 +170,7 @@ impl Enhancements {
 
             for idx in 0..frames.len() {
                 if rule.matches_frame(frames, idx) {
-                    rule.update_frame_components_contributions(components, idx);
+                    rule.update_frame_components_contributions(components, frames, idx);
                     rule.modify_stacktrace_state(&mut stacktrace_state);
                 }
             }

@@ -45,6 +45,7 @@ def create_match_frame(frame_data: dict, platform: Optional[str]) -> dict:
         family=frame_data.get("platform") or platform,
         function=frame_data.get("function"),
         in_app=frame_data.get("in_app") or False,
+        orig_in_app=get_path(frame_data, "data", "orig_in_app"),
         module=get_path(frame_data, "module"),
         package=frame_data.get("package"),
         path=frame_data.get("abs_path") or frame_data.get("filename"),

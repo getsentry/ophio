@@ -116,14 +116,19 @@ impl Rule {
     /// Applies all modifications from this rule's actions to `frames` at the index `idx`.
     pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize) {
         for action in &self.0.actions {
-            action.apply_modifications_to_frame(frames, idx, self)
+            action.apply_modifications_to_frame(frames, idx)
         }
     }
 
     /// Updates grouping component contribution information.
-    pub fn update_frame_components_contributions(&self, components: &mut [Component], idx: usize) {
+    pub fn update_frame_components_contributions(
+        &self,
+        components: &mut [Component],
+        frames: &[Frame],
+        idx: usize,
+    ) {
         for action in &self.0.actions {
-            action.update_frame_components_contributions(components, idx, self);
+            action.update_frame_components_contributions(components, frames, idx, self);
         }
     }
 }
