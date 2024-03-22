@@ -116,7 +116,7 @@ impl Rule {
     /// Applies all modifications from this rule's actions to `frames` at the index `idx`.
     pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize) {
         for action in &self.0.actions {
-            action.apply_modifications_to_frame(frames, idx, self)
+            action.apply_modifications_to_frame(frames, idx)
         }
     }
 

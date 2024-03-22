@@ -110,7 +110,7 @@ impl FlagAction {
     }
 
     /// Applies this action's modification to `frames` at the index `idx`.
-    pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize, _rule: &Rule) {
+    pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize) {
         if self.ty == FlagActionType::App {
             for frame in self.slice_to_range_mut(frames, idx) {
                 frame.in_app = Some(self.flag);
@@ -265,9 +265,9 @@ impl Action {
     }
 
     /// Applies this action's modification to `frames` at the index `idx`.
-    pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize, rule: &Rule) {
+    pub fn apply_modifications_to_frame(&self, frames: &mut [Frame], idx: usize) {
         match self {
-            Action::Flag(action) => action.apply_modifications_to_frame(frames, idx, rule),
+            Action::Flag(action) => action.apply_modifications_to_frame(frames, idx),
             Action::Var(action) => action.apply_modifications_to_frame(frames, idx),
         }
     }
