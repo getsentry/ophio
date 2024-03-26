@@ -2,6 +2,7 @@
 //!
 //! See `enhancers.pyi` for documentation on classes and functions.
 
+use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use pyo3::types::PyList;
 use rust_ophio::enhancers;
@@ -98,13 +99,14 @@ impl Enhancements {
 
     #[staticmethod]
     fn parse(input: &str, cache: &mut Cache) -> PyResult<Self> {
-        let inner = enhancers::Enhancements::parse(input, &mut cache.0)?;
+        let inner = enhancers::Enhancements::parse(input, &mut cache.0).map_err(pretty_error)?;
         Ok(Self(inner))
     }
 
     #[staticmethod]
     fn from_config_structure(input: &[u8], cache: &mut Cache) -> PyResult<Self> {
-        let inner = enhancers::Enhancements::from_config_structure(input, &mut cache.0)?;
+        let inner = enhancers::Enhancements::from_config_structure(input, &mut cache.0)
+            .map_err(pretty_error)?;
         Ok(Self(inner))
     }
 
@@ -181,6 +183,22 @@ impl Enhancements {
             invert_stacktrace: assemble_result.invert_stacktrace,
         })
     }
+}
+
+fn pretty_error(err: anyhow::Error) -> PyErr {
+    use std::fmt::Write;
+    let mut err_str = format!(
+        "Invalid syntax {err}{}",
+        if err.source().is_some() { ":" } else { "" }
+    );
+
+    let mut source = err.source();
+    while let Some(err) = source {
+        write!(&mut err_str, "\n{err}").unwrap();
+        source = err.source();
+    }
+
+    PyRuntimeError::new_err(err_str)
 }
 
 fn convert_frame_from_py(frame: Bound<'_, PyAny>) -> PyResult<enhancers::Frame> {
