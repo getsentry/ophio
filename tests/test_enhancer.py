@@ -7,6 +7,7 @@ from sentry_ophio.enhancers import Cache, Component, Enhancements
 # be responsible for the `create_match_frame`
 PathSearchable = Union[Mapping[str, Any], Sequence[Any], None]
 
+cache = Cache(1_000)
 
 def get_path(data: PathSearchable, *path, **kwargs):
     """
@@ -64,7 +65,6 @@ def create_match_frame(frame_data: dict, platform: Optional[str]) -> dict:
 
 
 def test_simple_enhancer():
-    cache = Cache(1_000)
     enhancer = Enhancements.parse("path:**/test.js              +app", cache)
 
     frames = [
@@ -82,7 +82,6 @@ def test_simple_enhancer():
 @pytest.mark.parametrize("action", ["+", "-"])
 @pytest.mark.parametrize("type", ["prefix", "sentinel"])
 def test_sentinel_and_prefix(action, type):
-    cache = Cache(1_000)
     enhancer = Enhancements.parse(f"function:foo {action}{type}", cache)
 
     frames = [create_match_frame({"function": "foo"}, "whatever")]
@@ -95,3 +94,20 @@ def test_sentinel_and_prefix(action, type):
 
     expected = action == "+"
     assert getattr(frame_components[0], f"is_{type}_frame") is expected
+
+
+def test_parsing_errors():
+    with pytest.raises(RuntimeError, match="failed to parse matchers"):
+        Enhancements.parse("invalid.message:foo -> bar", cache)
+
+
+def test_caller_recursion():
+    # Remove this test when CallerMatch can be applied recursively
+    with pytest.raises(RuntimeError, match="failed to parse matchers"):
+        Enhancements.parse("[ category:foo ] | [ category:bar ] | category:baz +app", cache)
+
+
+def test_callee_recursion():
+    # Remove this test when CalleeMatch can be applied recursively
+    with pytest.raises(RuntimeError, match="failed to parse actions"):
+        Enhancements.parse(" category:foo | [ category:bar ] | [ category:baz ] +app", cache)
