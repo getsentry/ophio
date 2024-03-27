@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.6
+
+### Various fixes & improvements
+
+- Bump black from 23.12.0 to 24.3.0 (#51) by @dependabot
+- Return prettier parse errors (#50) by @Swatinem
+
 ## 0.2.5
 
 ### Various fixes & improvements
