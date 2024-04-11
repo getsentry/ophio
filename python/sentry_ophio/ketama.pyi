@@ -14,3 +14,18 @@ class KetamaPool:
         Returns the index within the initially provided `slots` to which the
         given `key` is being associated.
         """
+
+    def add_node(self, key: str):
+        """
+        Add a new node
+        """
+
+    def remove_node(self, key: str):
+        """
+        Remove a node
+        """
+
+    def get_node(self, key: str) -> str | None:
+        """
+        Get a node
+        """

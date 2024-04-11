@@ -21,4 +21,12 @@ impl KetamaPool {
     fn get_slot(&self, key: &str) -> usize {
         self.0.get_slot(key)
     }
+
+    fn add_node(&mut self, server: &str) {
+        self.0.add_node(server)
+    }
+
+    fn remove_node(&mut self, server: &str) {
+        self.0.remove_node(server)
+    }
 }
