@@ -38,7 +38,7 @@ impl KetamaPool {
             Ok(idx) => idx,
             Err(idx) => idx,
         };
-        self.ranking[ranking_idx].index as usize
+        self.ranking[ranking_idx % self.ranking.len()].index as usize
     }
 }
 
