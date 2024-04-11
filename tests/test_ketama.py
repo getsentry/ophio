@@ -7,10 +7,9 @@ def test_hasher():
     assert pool.get_slot("b") == 0
 
     pool = KetamaPool(["a", "b", "c", "d", "e"])
-    assert pool.get_slot("") == 0
 
     # these here are pretty random depending on the hashing state
     assert pool.get_slot("a") == 4
-    assert pool.get_slot("b") == 0
-    assert pool.get_slot("c") == 2
+    assert pool.get_slot("b") == 3
+    assert pool.get_slot("c") == 3
 

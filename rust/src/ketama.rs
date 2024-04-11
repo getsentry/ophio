@@ -57,7 +57,7 @@ fn create_server_ranking(keys: &[&str]) -> Vec<ServerRank> {
             let md5_hash = Md5::digest(&hash_buf);
 
             for alignment in 0..POINTS_PER_HASH {
-                let value = u32::from_le_bytes([
+                let value = u32::from_be_bytes([
                     md5_hash[3 + alignment * 4],
                     md5_hash[2 + alignment * 4],
                     md5_hash[1 + alignment * 4],
