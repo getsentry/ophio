@@ -45,12 +45,13 @@ impl KetamaPool {
 
     /// Adds the appropriate rankings for the new node
     pub fn add_node(&mut self, server_name: &str) {
-      create_server_ranking(&[server_name], &mut self.ranking);
+        create_server_ranking(&[server_name], &mut self.ranking);
     }
 
     /// Removes the rankings corresponding to the server name
     pub fn remove_node(&mut self, server_name: &str) {
-        self.ranking.retain(|ranking| ranking.server_name == server_name)
+        self.ranking
+            .retain(|ranking| ranking.server_name == server_name)
     }
 
     pub fn get_node(&self, key: &str) -> &str {
