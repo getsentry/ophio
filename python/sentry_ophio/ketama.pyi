@@ -25,7 +25,7 @@ class KetamaPool:
         Remove a node
         """
 
-    def get_node(self, key: str) -> str | None:
+    def get_node(self, key: str) -> str:
         """
         Get a node
         """
