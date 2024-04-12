@@ -10,11 +10,15 @@ struct ServerRank {
     index: u32,
 }
 
+const POINTS_PER_HASH: usize = 4;
+const POINTS_PER_SERVER: usize = 40;
+
 impl KetamaPool {
     /// Builds a new pool using the given hash keys.
     pub fn new(keys: &[&str]) -> Self {
-        let ranking = create_server_ranking(keys);
-        Self { ranking }
+        let mut slf = Self { ranking: vec![] };
+        slf.update_node_ranking(keys);
+        slf
     }
 
     /// Picks a slot for the given `key`.
@@ -40,38 +44,35 @@ impl KetamaPool {
         };
         self.ranking[ranking_idx % self.ranking.len()].index as usize
     }
-}
 
-const POINTS_PER_HASH: usize = 4;
-const POINTS_PER_SERVER: usize = 40;
+    fn update_node_ranking(&mut self, keys: &[&str]) {
+        self.ranking.clear();
+        self.ranking
+            .reserve(POINTS_PER_SERVER * POINTS_PER_HASH * keys.len());
 
-fn create_server_ranking(keys: &[&str]) -> Vec<ServerRank> {
-    let mut ranking = Vec::with_capacity(POINTS_PER_SERVER * POINTS_PER_HASH * keys.len());
-    let mut hash_buf = String::new();
+        let mut hash_buf = String::new();
+        for (idx, key) in keys.iter().enumerate() {
+            for point_idx in 0..POINTS_PER_SERVER {
+                use std::fmt::Write;
+                hash_buf.clear();
+                write!(&mut hash_buf, "{key}-{point_idx}").unwrap();
+                let md5_hash = Md5::digest(&hash_buf);
 
-    for (idx, key) in keys.iter().enumerate() {
-        for point_idx in 0..POINTS_PER_SERVER {
-            use std::fmt::Write;
-            hash_buf.clear();
-            write!(&mut hash_buf, "{key}-{point_idx}").unwrap();
-            let md5_hash = Md5::digest(&hash_buf);
-
-            for alignment in 0..POINTS_PER_HASH {
-                let value = u32::from_be_bytes([
-                    md5_hash[3 + alignment * 4],
-                    md5_hash[2 + alignment * 4],
-                    md5_hash[1 + alignment * 4],
-                    md5_hash[alignment * 4],
-                ]);
-                ranking.push(ServerRank {
-                    value,
-                    index: idx as u32,
-                });
+                for alignment in 0..POINTS_PER_HASH {
+                    let value = u32::from_be_bytes([
+                        md5_hash[3 + alignment * 4],
+                        md5_hash[2 + alignment * 4],
+                        md5_hash[1 + alignment * 4],
+                        md5_hash[alignment * 4],
+                    ]);
+                    self.ranking.push(ServerRank {
+                        value,
+                        index: idx as u32,
+                    });
+                }
             }
         }
+
+        self.ranking.sort_by_key(|rank| rank.value);
     }
-
-    ranking.sort_by_key(|rank| rank.value);
-
-    ranking
 }
