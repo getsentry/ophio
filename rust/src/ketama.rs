@@ -15,7 +15,9 @@ pub struct KetamaPool {
 
 /// A Nodes `rank` in the main [`KetamaPool::ranking`] list.
 struct NodeRank {
+    /// The hash value, used for sorting.
     value: u32,
+    /// The index of the node in the main [`KetamaPool::nodes`] set.
     index: u32,
 }
 
