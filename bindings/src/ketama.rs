@@ -19,6 +19,6 @@ impl KetamaPool {
     }
 
     fn get_slot(&self, key: &str) -> usize {
-        self.0.get_slot(key)
+        self.0.get_node_idx(key)
     }
 }
