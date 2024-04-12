@@ -6,16 +6,16 @@ use smol_str::SmolStr;
 pub struct KetamaPool {
     /// The set of nodes that this pool knows about.
     nodes: IndexSet<SmolStr>,
-    /// The list of Servers, sorted by their ranking value.
-    ranking: Vec<NodeRank>,
+    /// The list of Servers, sorted by their hash value.
+    hash_ring: Vec<NodeHash>,
 
     /// A reusable scratch buffer to format node hash keys into.
     hash_buf: String,
 }
 
-/// A Nodes `rank` in the main [`KetamaPool::ranking`] list.
-struct NodeRank {
-    /// The hash value, used for sorting.
+/// A Node in the main [`KetamaPool::hash_ring`] list.
+struct NodeHash {
+    /// The hash value, used for sorting and binary search.
     value: u32,
     /// The index of the node in the main [`KetamaPool::nodes`] set.
     index: u32,
@@ -29,7 +29,7 @@ impl KetamaPool {
     pub fn new(initial_nodes: &[&str]) -> Self {
         let mut slf = Self {
             nodes: initial_nodes.iter().map(SmolStr::new).collect(),
-            ranking: vec![],
+            hash_ring: vec![],
             hash_buf: String::new(),
         };
         slf.update_node_ranking();
@@ -60,7 +60,7 @@ impl KetamaPool {
 
     /// Picks a node in this pool to host the given `key`.
     pub fn get_node_idx(&self, key: &str) -> usize {
-        if self.ranking.len() <= 1 {
+        if self.hash_ring.len() <= 1 {
             return 0;
         }
 
@@ -71,18 +71,18 @@ impl KetamaPool {
         };
 
         let ranking_idx = match self
-            .ranking
+            .hash_ring
             .binary_search_by_key(&key_hash, |rank| rank.value)
         {
             Ok(idx) => idx,
             Err(idx) => idx,
         };
-        self.ranking[ranking_idx % self.ranking.len()].index as usize
+        self.hash_ring[ranking_idx % self.hash_ring.len()].index as usize
     }
 
     fn update_node_ranking(&mut self) {
-        self.ranking.clear();
-        self.ranking
+        self.hash_ring.clear();
+        self.hash_ring
             .reserve(POINTS_PER_SERVER * POINTS_PER_HASH * self.nodes.len());
 
         for (idx, key) in self.nodes.iter().enumerate() {
@@ -99,7 +99,7 @@ impl KetamaPool {
                         md5_hash[1 + alignment * 4],
                         md5_hash[alignment * 4],
                     ]);
-                    self.ranking.push(NodeRank {
+                    self.hash_ring.push(NodeHash {
                         value,
                         index: idx as u32,
                     });
@@ -107,7 +107,7 @@ impl KetamaPool {
             }
         }
 
-        self.ranking.sort_by_key(|rank| rank.value);
+        self.hash_ring.sort_by_key(|rank| rank.value);
     }
 }
 
