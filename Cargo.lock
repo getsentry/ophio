@@ -803,6 +803,7 @@ dependencies = [
  "crc32fast",
  "divan",
  "globset",
+ "indexmap",
  "lru",
  "md-5",
  "regex",

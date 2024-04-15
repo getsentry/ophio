@@ -11,6 +11,7 @@ testing = ["dep:serde_json"]
 anyhow = "1.0.79"
 crc32fast = "1.4.0"
 globset = "0.4.14"
+indexmap = "2.2.6"
 lru = "0.12.1"
 md-5 = "0.10.6"
 regex = "1.10.2"
