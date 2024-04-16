@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.7
+
+### Various fixes & improvements
+
+- Implement a crc32/Ketama-based consistent hashing scheme (#52) by @Swatinem
+
 ## 0.2.6
 
 ### Various fixes & improvements
