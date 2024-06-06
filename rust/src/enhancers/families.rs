@@ -9,7 +9,7 @@
 /// * `0b010` represents `"native"`
 /// * `0b100` represents `"javascript"`
 /// * `u8::MAX` represents `"all"`
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Families(u8);
 
 const BITFIELD_OTHER: u8 = 0b001;

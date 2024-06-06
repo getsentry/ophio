@@ -22,7 +22,7 @@ mod matchers;
 mod rules;
 
 pub use cache::*;
-use config_structure::{EncodedAction, EncodedEnhancements, EncodedMatcher};
+use config_structure::EncodedEnhancements;
 pub use families::Families;
 pub use frame::{Frame, StringField};
 pub use rules::Rule;
@@ -109,18 +109,7 @@ impl Enhancements {
 
         let all_rules: Vec<_> = rules
             .into_iter()
-            .map(|r| {
-                let matchers =
-                    r.0.into_iter()
-                        .map(|encoded| EncodedMatcher::into_matcher(encoded, &mut cache.regex))
-                        .collect::<anyhow::Result<_>>()?;
-                let actions =
-                    r.1.into_iter()
-                        .map(EncodedAction::into_action)
-                        .collect::<anyhow::Result<_>>()?;
-
-                Ok(Rule::new(matchers, actions))
-            })
+            .map(|r| r.into_rule(&mut cache.regex))
             .collect::<anyhow::Result<_>>()?;
 
         Ok(Enhancements::new(all_rules))

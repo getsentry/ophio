@@ -144,7 +144,7 @@ impl Matcher {
 }
 
 /// Denotes whether a frame matcher applies to the current frame or one of the adjacent frames.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum FrameOffset {
     /// The caller frame, i.e., the one before the current frame.
     Caller,
@@ -157,16 +157,16 @@ pub(crate) enum FrameOffset {
 /// A component for telling whether a frame matches a certain predicate.
 ///
 /// This wraps a [`FrameMatcherInner`], which does the actual matching, with some extra logic.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FrameMatcher {
     /// If this is true, a frame passes the matcher if it *doesn't* pass the inner matcher.
-    negated: bool,
+    pub(crate) negated: bool,
     /// The frame this matcher applies to (the current one, the caller, or the callee).
-    frame_offset: FrameOffset,
+    pub(crate) frame_offset: FrameOffset,
     /// The inner matcher that actually contains the matching logic.
-    inner: FrameMatcherInner,
+    pub(crate) inner: FrameMatcherInner,
     /// The string pattern this matcher was constructed from. This is used for the `Display` impl.
-    raw_pattern: SmolStr,
+    pub(crate) raw_pattern: SmolStr,
 }
 
 impl FrameMatcher {
@@ -229,7 +229,7 @@ impl fmt::Display for FrameMatcher {
 ///
 /// This type is not used directly, but rather wrapped in a [`FrameMatcher`].
 #[derive(Debug, Clone)]
-enum FrameMatcherInner {
+pub(crate) enum FrameMatcherInner {
     /// Checks whether a particular field of a frame conforms to a pattern.
     Field {
         /// The field to check.
@@ -335,9 +335,44 @@ impl fmt::Display for FrameMatcherInner {
     }
 }
 
+impl PartialEq for FrameMatcherInner {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (
+                FrameMatcherInner::Field {
+                    field, path_like, ..
+                },
+                FrameMatcherInner::Field {
+                    field: other_field,
+                    path_like: other_path_like,
+                    ..
+                },
+            ) => field == other_field && path_like == other_path_like,
+            (
+                FrameMatcherInner::Family { families },
+                FrameMatcherInner::Family {
+                    families: other_families,
+                },
+            ) => families == other_families,
+            (
+                FrameMatcherInner::InApp { expected },
+                FrameMatcherInner::InApp {
+                    expected: other_expected,
+                },
+            ) => expected == other_expected,
+            (FrameMatcherInner::Noop { field }, FrameMatcherInner::Noop { field: other_field }) => {
+                field == other_field
+            }
+            _ => false,
+        }
+    }
+}
+
+impl Eq for FrameMatcherInner {}
+
 /// Which field an exception matcher checks.
-#[derive(Debug, Clone, Copy)]
-enum ExceptionMatcherType {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ExceptionMatcherType {
     /// Checks the `type` field.
     Type,
     /// Checks the `value` field.
@@ -361,13 +396,13 @@ impl fmt::Display for ExceptionMatcherType {
 pub struct ExceptionMatcher {
     /// If this is true, an exception passes the matcher if
     /// its relevant field *doesn't* fit the pattern.
-    negated: bool,
+    pub(crate) negated: bool,
     /// The regex pattern to check the exception field against.
     pattern: Arc<Regex>,
     /// The field to check.
-    ty: ExceptionMatcherType,
+    pub(crate) ty: ExceptionMatcherType,
     /// The string pattern this matcher was constructed from. This is used for the `Display` impl.
-    raw_pattern: SmolStr,
+    pub(crate) raw_pattern: SmolStr,
 }
 
 impl ExceptionMatcher {
@@ -445,6 +480,16 @@ impl fmt::Display for ExceptionMatcher {
         write!(f, "{ty}:{raw_pattern}")
     }
 }
+
+impl PartialEq for ExceptionMatcher {
+    fn eq(&self, other: &Self) -> bool {
+        self.negated == other.negated
+            && self.raw_pattern == other.raw_pattern
+            && self.ty == other.ty
+    }
+}
+
+impl Eq for ExceptionMatcher {}
 
 #[cfg(test)]
 mod tests {
@@ -626,5 +671,11 @@ mod tests {
             rule.to_string(),
             "family:native package:**/Containers/Bundle/Application/** +app"
         );
+    }
+
+    #[test]
+    fn test_error_value() {
+        let input = r#"error.value:"*something*" max-frames=12"#;
+        Enhancements::parse(input, &mut Default::default()).unwrap();
     }
 }
