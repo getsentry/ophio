@@ -53,7 +53,7 @@ pub struct EncodedEnhancements<'a>(
     #[serde(borrow)] pub Vec<EncodedRule<'a>>,
 );
 
-/// Compact representation of a [`Rule`](super::rules::Rule).
+/// Compact representation of a [`Rule`].
 ///
 /// Can be deserialized from msgpack.
 #[derive(Debug, Deserialize, Serialize)]
