@@ -371,4 +371,19 @@ mod tests {
             rule
         );
     }
+
+    #[test]
+    fn test_in_app() {
+        for pat in ["yes", "true", "1", "no", "false", "0"] {
+            let input = format!("app:{pat} max-frames=12");
+            let rule = parse_rule(&input, &mut Default::default()).unwrap();
+
+            let serialized = rmp_serde::to_vec(&EncodedRule::from_rule(&rule)).unwrap();
+
+            let deserialized: EncodedRule = rmp_serde::from_slice(&serialized).unwrap();
+            let decoded = deserialized.into_rule(&mut Default::default()).unwrap();
+
+            assert_eq!(decoded, rule);
+        }
+    }
 }
