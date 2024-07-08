@@ -58,6 +58,7 @@ pub struct Component {
 #[pymethods]
 impl Component {
     #[new]
+    #[pyo3(signature = (is_prefix_frame, is_sentinel_frame, contributes=None))]
     fn new(is_prefix_frame: bool, is_sentinel_frame: bool, contributes: Option<bool>) -> Self {
         Self {
             contributes,
