@@ -537,7 +537,6 @@ name = "ophio-bindings"
 version = "0.2.7"
 dependencies = [
  "anyhow",
- "proguard",
  "pyo3",
  "rust-ophio",
  "smol_str",
@@ -632,16 +631,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b33eb56c327dec362a9e55b3ad14f9d2f0904fb5a5b03b513ab5465399e9f43"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "proguard"
-version = "5.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b88dddb086b00f5539a95d2c7a2373358fd8bfadb7b1297cc29e0196403a1b98"
-dependencies = [
- "lazy_static",
- "uuid",
 ]
 
 [[package]]
@@ -896,12 +885,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sha1_smol"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae1a47186c03a32177042e55dbc5fd5aee900b8e0069a8d70fba96a9375cd012"
-
-[[package]]
 name = "siphasher"
 version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1082,9 +1065,6 @@ name = "uuid"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a183cf7feeba97b4dd1c0d46788634f6221d87fa961b305bed08c851829efcc0"
-dependencies = [
- "sha1_smol",
-]
 
 [[package]]
 name = "version_check"
