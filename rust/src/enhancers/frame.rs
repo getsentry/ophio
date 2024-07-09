@@ -37,7 +37,7 @@ pub struct Frame {
 }
 
 /// The name of a string-valued field in a frame.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FrameField {
     Category,
     Function,

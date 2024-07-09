@@ -10,10 +10,10 @@ use super::matchers::{ExceptionMatcher, FrameMatcher, Matcher};
 use super::{Component, ExceptionData, StacktraceState};
 
 /// An enhancement rule, comprising exception matchers, frame matchers, and actions.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Rule(pub(crate) Arc<RuleInner>);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// The inner value of a [`Rule`], containing its matchers and actions.
 pub struct RuleInner {
     /// The rule's frame matchers.
