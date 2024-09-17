@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.9
+
+### Various fixes & improvements
+
+- Lower the minimum Python requirement (#64) by @armenzg
+
 ## 0.2.8
 
 ### Various fixes & improvements
