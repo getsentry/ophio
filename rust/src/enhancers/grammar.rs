@@ -176,8 +176,6 @@ fn flag_action(input: &str) -> anyhow::Result<(FlagAction, &str)> {
     let ty = match name {
         "app" => FlagActionType::App,
         "group" => FlagActionType::Group,
-        "prefix" => FlagActionType::Prefix,
-        "sentinel" => FlagActionType::Sentinel,
         _ => anyhow::bail!("at `{after_flag}`: invalid flag name `{name}`"),
     };
 

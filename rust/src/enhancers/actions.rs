@@ -40,10 +40,6 @@ pub enum FlagActionType {
     App,
     /// The `group` flag.
     Group,
-    /// The `prefix` flag.
-    Prefix,
-    /// The `sentinel` flag.
-    Sentinel,
 }
 
 impl fmt::Display for FlagActionType {
@@ -51,8 +47,6 @@ impl fmt::Display for FlagActionType {
         match self {
             FlagActionType::App => write!(f, "app"),
             FlagActionType::Group => write!(f, "group"),
-            FlagActionType::Prefix => write!(f, "prefix"),
-            FlagActionType::Sentinel => write!(f, "sentinel"),
         }
     }
 }
@@ -149,16 +143,6 @@ impl FlagAction {
                         component.hint =
                             Some(format!("marked {state} by stack trace rule ({rule})"));
                     }
-                }
-                FlagActionType::Prefix => {
-                    component.is_prefix_frame = self.flag;
-                    component.hint =
-                        Some(format!("marked as prefix frame by {rule_hint} ({rule})"));
-                }
-                FlagActionType::Sentinel => {
-                    component.is_sentinel_frame = self.flag;
-                    component.hint =
-                        Some(format!("marked as sentinel frame by {rule_hint} ({rule})"));
                 }
             }
         }

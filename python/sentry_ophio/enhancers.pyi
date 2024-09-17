@@ -8,12 +8,10 @@ ModificationResult = tuple[str | None, bool | None]
 
 class Component:
     contributes: bool | None
-    is_prefix_frame: bool
-    is_sentinel_frame: bool
     hint: str | None
 
     def __new__(
-        cls, is_prefix_frame: bool, is_sentinel_frame: bool, contributes: bool | None
+        cls, contributes: bool | None
     ) -> Self: ...
 
 
