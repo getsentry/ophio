@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.8
+
+### Various fixes & improvements
+
+- Remove `is_sentinel/prefix_frame` from Enhancers (#63) by @Swatinem
+- Remove more unused dependencies (#61) by @Swatinem
+- Update pyo3 and clean up dependencies (#60) by @Swatinem
+- Remove Proguard bindings (#59) by @Swatinem
+- Remove all the `ketama`-related code (#55) by @Swatinem
+- Update to Python 3.11 and `cargo update` (#56) by @Swatinem
+
 ## 0.2.7
 
 ### Various fixes & improvements
