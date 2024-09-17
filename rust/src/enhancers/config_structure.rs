@@ -115,8 +115,6 @@ pub enum EncodedAction<'a> {
     ///| ---- | ---------- |
     ///|  00  |   `group`  |
     ///|  01  |    `app`   |
-    ///|  10  |  `prefix`  |
-    ///|  11  | `sentinel` |
     ///
     /// The bits `b10, b9, b8` encode the flag value and the range:
     ///
@@ -144,12 +142,7 @@ impl<'a> EncodedAction<'a> {
         use VarActionValue::*;
         Ok(match self {
             EncodedAction::FlagAction(flag) => {
-                const ACTIONS: &[FlagActionType] = &[
-                    FlagActionType::Group,
-                    FlagActionType::App,
-                    FlagActionType::Prefix,
-                    FlagActionType::Sentinel,
-                ];
+                const ACTIONS: &[FlagActionType] = &[FlagActionType::Group, FlagActionType::App];
                 const FLAGS: &[(bool, Option<Range>)] = &[
                     (true, None),
                     (true, Some(Range::Up)),

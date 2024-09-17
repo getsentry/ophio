@@ -1,7 +1,7 @@
 from typing import Any, Mapping, Optional, Sequence, Union
 
 import pytest
-from sentry_ophio.enhancers import Cache, Component, Enhancements
+from sentry_ophio.enhancers import Cache, Enhancements
 
 # TODO: all this is copied from Sentry, and the Sentry side should still
 # be responsible for the `create_match_frame`
@@ -77,24 +77,6 @@ def test_simple_enhancer():
 
     modified_frames = enhancer.apply_modifications_to_frames(frames, exception_data)
     print(modified_frames)
-
-
-@pytest.mark.parametrize("action", ["+", "-"])
-@pytest.mark.parametrize("type", ["prefix", "sentinel"])
-def test_sentinel_and_prefix(action, type):
-    enhancer = Enhancements.parse(f"function:foo {action}{type}", cache)
-
-    frames = [create_match_frame({"function": "foo"}, "whatever")]
-    frame_components = [Component(contributes=None, is_prefix_frame=False, is_sentinel_frame=False)]
-
-    assert not getattr(frame_components[0], f"is_{type}_frame")
-
-    exception_data = {"ty": None, "value": None, "mechanism": None}
-    enhancer.assemble_stacktrace_component(frames, exception_data,frame_components)
-
-    expected = action == "+"
-    assert getattr(frame_components[0], f"is_{type}_frame") is expected
-
 
 def test_parsing_errors():
     with pytest.raises(RuntimeError, match="failed to parse matchers"):

@@ -47,10 +47,6 @@ pub struct AssembleResult {
 pub struct Component {
     #[pyo3(get, set)]
     contributes: Option<bool>,
-    #[pyo3(get, set)]
-    is_prefix_frame: bool,
-    #[pyo3(get, set)]
-    is_sentinel_frame: bool,
     #[pyo3(get)]
     hint: Option<String>,
 }
@@ -58,12 +54,10 @@ pub struct Component {
 #[pymethods]
 impl Component {
     #[new]
-    #[pyo3(signature = (is_prefix_frame, is_sentinel_frame, contributes=None))]
-    fn new(is_prefix_frame: bool, is_sentinel_frame: bool, contributes: Option<bool>) -> Self {
+    #[pyo3(signature = (contributes=None))]
+    fn new(contributes: Option<bool>) -> Self {
         Self {
             contributes,
-            is_prefix_frame,
-            is_sentinel_frame,
             hint: None,
         }
     }
@@ -173,8 +167,6 @@ impl Enhancements {
             grouping_components.iter_mut().zip(components.into_iter())
         {
             py_component.contributes = rust_component.contributes;
-            py_component.is_prefix_frame = rust_component.is_prefix_frame;
-            py_component.is_sentinel_frame = rust_component.is_sentinel_frame;
             py_component.hint = rust_component.hint;
         }
 
@@ -225,8 +217,6 @@ fn convert_frame_from_py(frame: Bound<'_, PyAny>) -> PyResult<enhancers::Frame> 
 fn convert_component_from_py(component: &Component) -> enhancers::Component {
     enhancers::Component {
         contributes: component.contributes,
-        is_prefix_frame: component.is_prefix_frame,
-        is_sentinel_frame: component.is_sentinel_frame,
         hint: None,
     }
 }

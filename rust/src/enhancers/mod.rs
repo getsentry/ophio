@@ -222,8 +222,6 @@ impl Extend<Rule> for Enhancements {
 #[derive(Debug, Clone, Default)]
 pub struct Component {
     pub contributes: Option<bool>,
-    pub is_prefix_frame: bool,
-    pub is_sentinel_frame: bool,
     pub hint: Option<String>,
 }
 
