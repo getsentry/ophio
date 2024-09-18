@@ -14,7 +14,7 @@ pyo3 = { version = "0.22.1", features = [
     "anyhow",
     "extension-module",
     "serde",
-    "abi3-py311",
+    "abi3-py310",
 ] }
 rust-ophio = { path = "../rust" }
 smol_str = "0.2.0"
