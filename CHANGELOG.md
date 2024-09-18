@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.0.0
+
+### Various fixes & improvements
+
+- 3.10.11 (#65) by @armenzg
+- remove wityh (#65) by @armenzg
+- Cargo toml (#65) by @armenzg
+- Do not run on push for pull requests (#68) by @armenzg
+- Add python-version to tests (#66) by @armenzg
+- 3.10.15 (#66) by @armenzg
+- Partially revert "Update to Python 3.11 and `cargo update` (#56)" (#66) by @armenzg
+- Build wheels with Python 3.10 (#65) by @armenzg
+- No need for if conditionals (#67) by @armenzg
+- Run release builds on PRs (#67) by @armenzg
+
 ## 0.2.9
 
 ### Various fixes & improvements
