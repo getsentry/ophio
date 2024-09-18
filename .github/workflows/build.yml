@@ -2,8 +2,7 @@ name: Release build
 
 on:
   push:
-    branches:
-      - "release/**"
+  pull_request:
 
 jobs:
   linux:
