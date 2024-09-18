@@ -2,6 +2,7 @@ name: Release build
 
 on:
   push:
+  pull_request:
 
 jobs:
   linux:
@@ -23,7 +24,6 @@ jobs:
           manylinux: auto
 
       - name: Upload wheels
-        if: github.ref == 'refs/heads/release/**'
         uses: actions/upload-artifact@v3
         with:
           name: ${{ github.sha }}
@@ -47,7 +47,6 @@ jobs:
           sccache: "true"
 
       - name: Upload wheels
-        if: github.ref == 'refs/heads/release/**'
         uses: actions/upload-artifact@v3
         with:
           name: ${{ github.sha }}
@@ -65,7 +64,6 @@ jobs:
           args: --out dist
 
       - name: Upload sdist
-        if: github.ref == 'refs/heads/release/**'
         uses: actions/upload-artifact@v3
         with:
           name: ${{ github.sha }}
