@@ -10,7 +10,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 anyhow = "1.0.79"
-pyo3 = { version = "0.22.4", features = [
+pyo3 = { version = "0.24.1", features = [
     "anyhow",
     "extension-module",
     "serde",
