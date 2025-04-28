@@ -33,7 +33,7 @@ pub struct EncodedRule<'a>(
 #[derive(Debug, Deserialize)]
 pub struct EncodedMatcher<'a>(pub &'a str);
 
-impl<'a> EncodedMatcher<'a> {
+impl EncodedMatcher<'_> {
     /// Converts the encoded matcher to a [`Matcher`].
     ///
     /// The `cache` is used to memoize the computation of regexes.
@@ -136,7 +136,7 @@ pub enum EncodedAction<'a> {
     VarAction((&'a str, VarActionValue)),
 }
 
-impl<'a> EncodedAction<'a> {
+impl EncodedAction<'_> {
     /// Converts the encoded action to an [`Action`].
     pub fn into_action(self) -> anyhow::Result<Action> {
         use VarActionValue::*;

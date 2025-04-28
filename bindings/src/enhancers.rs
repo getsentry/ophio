@@ -131,8 +131,12 @@ impl Enhancements {
 
         let result = frames
             .into_iter()
-            .map(|f| (f.category.as_ref().map(|c| c.as_str()), f.in_app).into_py(py))
-            .collect();
+            .map(|f| {
+                (f.category.as_ref().map(|c| c.as_str()), f.in_app)
+                    .into_pyobject(py)
+                    .map(Into::into)
+            })
+            .collect::<PyResult<_>>()?;
 
         Ok(result)
     }
