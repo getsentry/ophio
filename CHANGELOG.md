@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.1
+
+### Various fixes & improvements
+
+- allow enhancement versions 2 or higher (#73) by @lobsterkatie
+- meta: processing -> ingest codeowners (#75) by @Dav1dde
+- Bump pyo3 from 0.22.4 to 0.24.1 (#72) by @dependabot
+- Bump pyo3 from 0.22.1 to 0.22.4 (#70) by @dependabot
+- ci: update artifact actions to v4 (#69) by @joshuarli
+
 ## 1.0.0
 
 ### Various fixes & improvements
