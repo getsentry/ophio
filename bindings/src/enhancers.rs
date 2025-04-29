@@ -129,12 +129,14 @@ impl Enhancements {
         self.0
             .apply_modifications_to_frames(&mut frames, &exception_data);
 
-        let result = frames
+        frames
             .into_iter()
-            .map(|f| (f.category.as_ref().map(|c| c.as_str()), f.in_app).into_py(py))
-            .collect();
-
-        Ok(result)
+            .map(|f| {
+                (f.category.as_ref().map(|c| c.as_str()), f.in_app)
+                    .into_pyobject(py)
+                    .map(Into::into)
+            })
+            .collect()
     }
 
     fn assemble_stacktrace_component(
