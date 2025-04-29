@@ -103,8 +103,8 @@ impl Enhancements {
         let EncodedEnhancements(version, _bases, rules) = rmp_serde::from_slice(input)?;
 
         anyhow::ensure!(
-            version == 2,
-            "Rust Enhancements only supports config_structure version `2`"
+            version == 2 || version == 3,
+            "Rust Enhancements only supports config_structure version `2` or `3`"
         );
 
         let all_rules: Vec<_> = rules
