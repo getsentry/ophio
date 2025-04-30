@@ -1,4 +1,4 @@
-.PHONY: develop test install-python-dependencies install-py-dev
+.PHONY: develop test install-python-dependencies install-py-dev build
 
 reset-python:
 	pre-commit clean
@@ -49,3 +49,7 @@ format-rust-ci:
 	. scripts/rust-envvars && \
 		cargo +stable fmt --all --check
 .PHONY: format-rust-ci
+
+build:
+	maturin develop
+.PHONY: build
