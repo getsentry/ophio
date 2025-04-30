@@ -5,3 +5,4 @@
 *.py[cod]
 *.so
 dist/
+.DS_Store
