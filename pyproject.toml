@@ -17,6 +17,9 @@ dynamic = ["version"]
 module-name = "sentry_ophio._bindings"
 manifest-path = "bindings/Cargo.toml"
 python-source = "python"
+include = [
+    { path = "LICENSE", format = "sdist" }
+]
 
 [tool.mypy]
 python_version = "3.10"
