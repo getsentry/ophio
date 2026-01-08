@@ -81,7 +81,7 @@ fn ident(input: &str) -> anyhow::Result<(&str, &str)> {
 /// non-`"` characters enclosed in `""`.
 ///
 /// Escaped characters in the argument are unescaped.
-fn argument(input: &str) -> anyhow::Result<(Cow<str>, &str)> {
+fn argument(input: &str) -> anyhow::Result<(Cow<'_, str>, &str)> {
     let (result, rest) = if let Some(rest) = input.strip_prefix('"') {
         let end = rest
             .find('"')
