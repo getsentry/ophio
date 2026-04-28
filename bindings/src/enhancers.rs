@@ -165,9 +165,7 @@ impl Enhancements {
             self.0
                 .assemble_stacktrace_component(&mut components, &frames, &exception_data);
 
-        for (py_component, rust_component) in
-            grouping_components.iter_mut().zip(components.into_iter())
-        {
+        for (py_component, rust_component) in grouping_components.iter_mut().zip(components) {
             py_component.contributes = rust_component.contributes;
             py_component.hint = rust_component.hint;
         }
