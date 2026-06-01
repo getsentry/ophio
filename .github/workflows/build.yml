@@ -35,7 +35,7 @@ jobs:
           compression-level: '0'
 
   macos:
-    runs-on: macos-latest
+    runs-on: macos-15
     strategy:
       matrix:
         target: [x86_64, aarch64]
