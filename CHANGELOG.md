@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.1.4
+
+### Bug Fixes 🐛
+
+#### Lints
+
+- Fix a into_iter lint by @tobias-wilfert in [#87](https://github.com/getsentry/ophio/pull/87)
+- Fix a lifetime mismatch lint by @Dav1dde in [#83](https://github.com/getsentry/ophio/pull/83)
+
+### Internal Changes 🔧
+
+- (ci) Pin macOS runner to macos-15 by @tobias-wilfert in [#88](https://github.com/getsentry/ophio/pull/88)
+- Update pyo3 from 0.24.1 to 0.29.0 by @loewenheim in [#92](https://github.com/getsentry/ophio/pull/92)
+- Bump black from 24.3.0 to 26.3.1 by @tobias-wilfert in [#85](https://github.com/getsentry/ophio/pull/85)
+- Remove @Swatinem from CODEOWNERS by @tobias-wilfert in [#86](https://github.com/getsentry/ophio/pull/86)
+
+### Other
+
+- Bump pytest from 7.4.3 to 9.0.3 by @dependabot in [#90](https://github.com/getsentry/ophio/pull/90)
+- Bump lru from 0.12.3 to 0.16.3 by @dependabot in [#82](https://github.com/getsentry/ophio/pull/82)
+
 ## 1.1.3
 
 ### Various fixes & improvements
