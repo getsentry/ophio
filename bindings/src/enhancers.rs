@@ -2,7 +2,7 @@
 //!
 //! See `enhancers.pyi` for documentation on classes and functions.
 
-use pyo3::exceptions::PyRuntimeError;
+use pyo3::exceptions::{PyRuntimeError, PyUnicodeDecodeError};
 use pyo3::prelude::*;
 use pyo3::types::PyList;
 use rust_ophio::enhancers;
@@ -22,13 +22,16 @@ pub struct Frame {
 
 struct OptStr(Option<enhancers::StringField>);
 
-impl FromPyObject<'_> for OptStr {
-    fn extract_bound(ob: &Bound<'_, PyAny>) -> PyResult<Self> {
-        if ob.is_none() {
+impl FromPyObject<'_, '_> for OptStr {
+    type Error = PyErr;
+
+    fn extract(obj: Borrowed<'_, '_, PyAny>) -> Result<Self, Self::Error> {
+        if obj.is_none() {
             return Ok(Self(None));
         }
-        let s: &[u8] = ob.extract()?;
-        let s = std::str::from_utf8(s)?;
+        let s: &[u8] = obj.extract()?;
+        let s = std::str::from_utf8(s)
+            .map_err(|err| PyUnicodeDecodeError::new_err_from_utf8(obj.py(), s, err))?;
         Ok(Self(Some(enhancers::StringField::new(s))))
     }
 }
@@ -114,7 +117,7 @@ impl Enhancements {
         py: Python,
         frames: Bound<'_, PyList>,
         exception_data: ExceptionData,
-    ) -> PyResult<Vec<PyObject>> {
+    ) -> PyResult<Vec<Py<PyAny>>> {
         let mut frames: Vec<_> = frames
             .into_iter()
             .map(convert_frame_from_py)
