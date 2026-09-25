@@ -13,12 +13,12 @@ jobs:
       matrix:
         target: [x86_64, aarch64]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - run: rustup toolchain install stable --profile minimal --no-self-update
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
 
       - name: Build wheels
-        uses: PyO3/maturin-action@v1
+        uses: PyO3/maturin-action@db323e2cf5679b7feb8bcb561a36b27a0bc19e79 # v1
         with:
           target: ${{ matrix.target }}
           args: --release --out dist --find-interpreter
@@ -26,7 +26,7 @@ jobs:
           manylinux: auto
 
       - name: Upload wheels
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: artifact-linux-${{ matrix.target }}
           path: dist
@@ -40,19 +40,19 @@ jobs:
       matrix:
         target: [x86_64, aarch64]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - run: rustup toolchain install stable --profile minimal --no-self-update
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
 
       - name: Build wheels
-        uses: PyO3/maturin-action@v1
+        uses: PyO3/maturin-action@db323e2cf5679b7feb8bcb561a36b27a0bc19e79 # v1
         with:
           target: ${{ matrix.target }}
           args: --release --out dist --find-interpreter
           sccache: "true"
 
       - name: Upload wheels
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: artifact-macos-${{ matrix.target }}
           path: dist
@@ -63,16 +63,16 @@ jobs:
   sdist:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Build sdist
-        uses: PyO3/maturin-action@v1
+        uses: PyO3/maturin-action@db323e2cf5679b7feb8bcb561a36b27a0bc19e79 # v1
         with:
           command: sdist
           args: --out dist
 
       - name: Upload sdist
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: artifact-sdist
           path: dist
@@ -85,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [linux, macos, sdist]
     steps:
-      - uses: actions/upload-artifact/merge@v4
+      - uses: actions/upload-artifact/merge@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           # Craft expects release assets from github to be a single artifact named after the sha.
           name: ${{ github.sha }}

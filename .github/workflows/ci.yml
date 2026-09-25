@@ -16,15 +16,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - run: rustup toolchain install stable --profile minimal --component rustfmt --component clippy --no-self-update
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
 
       - run: cargo fmt --all -- --check
       - run: cargo clippy --all-features --workspace --tests --examples -- -D clippy::all
 
-      # - uses: actions/setup-python@v4
+      # - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
       #   with:
       #     python-version: "3.10"
 
@@ -38,10 +38,10 @@ jobs:
     env:
       RUSTDOCFLAGS: -Dwarnings
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - run: rustup toolchain install stable --profile minimal --component rust-docs --no-self-update
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
 
       - run: cargo doc --workspace --all-features --document-private-items --no-deps
 
@@ -55,17 +55,17 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - run: rustup toolchain install stable --profile minimal --no-self-update
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
 
       - run: cargo test --workspace --all-features --all-targets
       - run: cargo test --workspace --all-features --doc
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@6f8efc29b200d32929f49075959781ed54ec270c # v3
         with:
           key: venv-${{ runner.os }}-${{ hashFiles('.python-version', 'requirements*.txt') }}
           path: .venv
@@ -79,14 +79,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - run: rustup toolchain install stable --profile minimal --component llvm-tools-preview --no-self-update
-      - uses: Swatinem/rust-cache@v2
-      - uses: taiki-e/install-action@cargo-llvm-cov
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
+      - uses: taiki-e/install-action@21eb0b6228fa6252dafdd9c82e7516ad2328c775 # cargo-llvm-cov
 
       - run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
 
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457 # v3
         with:
           files: lcov.info
