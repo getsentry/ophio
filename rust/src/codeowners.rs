@@ -53,7 +53,7 @@ fn translate_codeowners_pattern(pattern: &str) -> Option<Regex> {
             if pattern_chars.get(index + 1) == Some(&'*') {
                 let left_anchored = index == 0;
                 let leading_slash = index > 0 && pattern_chars.get(index - 1) == Some(&'/');
-                let right_anchored = index + 2 == pattern.len();
+                let right_anchored = index + 2 == pattern_chars.len();
                 let trailing_slash = pattern_chars.get(index + 2) == Some(&'/');
 
                 if (left_anchored || leading_slash) && (right_anchored || trailing_slash) {
@@ -106,6 +106,15 @@ pub fn is_codeowners_path_match(value: &[u8], pattern: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_unicode_trailing_double_star() {
+        for directory in ["café", "文档"] {
+            let pattern = format!("{directory}/**");
+            let regex = translate_codeowners_pattern(&pattern).unwrap();
+            assert_eq!(regex.as_str(), format!(r"\A{directory}/.*(?:\z|/)"));
+        }
+    }
 
     #[test]
     fn test_codeowners_patterns() {
