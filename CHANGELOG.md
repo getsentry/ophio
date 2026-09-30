@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0
+
+### New Features ✨
+
+- (librelay) Implement codeowners and glob matching by @Dav1dde in [#94](https://github.com/getsentry/ophio/pull/94)
+
+### Internal Changes 🔧
+
+- Pin GitHub Actions to full-length commit SHAs by @joshuarli in [#84](https://github.com/getsentry/ophio/pull/84)
+
 ## 1.1.4
 
 ### Bug Fixes 🐛
