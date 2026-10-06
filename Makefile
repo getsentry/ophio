@@ -14,7 +14,7 @@ tests: test
 
 # install-rs-dev/install-py-dev mimick sentry's naming conventions
 
-INDEX_URL=--index-url https://pypi.devinfra.sentry.io/simple
+INDEX_URL=--index-url https://sfw.security.sentry.io/pypi/simple
 
 install-python-dependencies:
 	pip install $(INDEX_URL) -r requirements-build.txt
