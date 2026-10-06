@@ -1,4 +1,4 @@
---index-url https://pypi.devinfra.sentry.io/simple
+--index-url https://sfw.security.sentry.io/pypi/simple
 
 black==26.3.1
 flake8==6.1.0
