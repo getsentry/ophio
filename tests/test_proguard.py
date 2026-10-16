@@ -7,7 +7,6 @@ from sentry_ophio.proguard import ProguardMapper
 def test_mapper(fixture_path):
     mapper = ProguardMapper.open(os.path.join(fixture_path, "proguard.txt"))
     assert mapper.has_line_info
-    # FIXME:
     assert mapper.uuid == uuid.UUID("da86dcce-c05f-5cc1-a1a0-8fbf5d74beb2")
 
     assert (
