@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### New Features ✨
+
+- Bring back the `proguard` bindings removed in 0.2.8 by @loewenheim in [#97](https://github.com/getsentry/ophio/pull/97)
+
 ## 1.2.0
 
 ### New Features ✨
