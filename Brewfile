@@ -1,0 +1,3 @@
+brew 'rustup'
+
+brew 'uv'

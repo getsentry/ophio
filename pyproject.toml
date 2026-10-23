@@ -1,10 +1,10 @@
 [build-system]
-requires = ["maturin>=1.4,<2.0"]
+requires = ["maturin>=1.8.2,<2.0"]
 build-backend = "maturin"
 
 [project]
 name = "sentry_ophio"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 license = { text = "Apache-2.0" }
 classifiers = [
     "License :: OSI Approved :: Apache Software License",
@@ -13,6 +13,24 @@ classifiers = [
 ]
 dynamic = ["version"]
 
+dependencies = [
+]
+
+[dependency-groups]
+dev = [
+    "black>=26.3.1",
+    "flake8>=6.1.0",
+    "isort>=5.13.2",
+    "mypy>=1.8.0",
+    "pytest>=9.0.3",
+    "maturin>=1.8.2",
+]
+
+[[tool.uv.index]]
+name = "sfw"
+url = "https://sfw.security.sentry.io/pypi/simple"
+default = true
+
 [tool.maturin]
 module-name = "sentry_ophio._bindings"
 manifest-path = "bindings/Cargo.toml"
@@ -20,14 +38,13 @@ python-source = "python"
 include = [{ path = "LICENSE", format = "sdist" }]
 
 [tool.mypy]
-python_version = "3.11"
-plugins = ["pydantic.mypy"]
+python_version = "3.13"
 files = ["."]
 exclude = ["^.venv/"]
 
 [tool.black]
 line-length = 100
-target-version = ['py311']
+target-version = ['py313']
 
 [tool.isort]
 profile = "black"
