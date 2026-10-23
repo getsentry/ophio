@@ -24,6 +24,7 @@ dev = [
     "mypy>=1.8.0",
     "pydantic>=2.5.2",
     "pytest>=9.0.3",
+    "maturin>=1.8.2",
 ]
 
 [[tool.uv.index]]
