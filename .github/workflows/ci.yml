@@ -77,6 +77,9 @@ jobs:
       - name: Build and Install Library
         run: uv pip install .
 
+      - name: Run MyPy
+        run: mypy
+
       - name: Run Python Tests
         run: pytest -v
 
