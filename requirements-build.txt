@@ -1,3 +1,0 @@
---index-url https://sfw.security.sentry.io/pypi/simple
-
-maturin==1.4.0

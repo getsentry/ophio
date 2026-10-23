@@ -13,6 +13,25 @@ classifiers = [
 ]
 dynamic = ["version"]
 
+dependencies = [
+]
+
+[dependency-groups]
+dev = [
+    "black>=26.3.1",
+    "flake8>=6.1.0",
+    "isort>=5.13.2",
+    "mypy>=1.8.0",
+    "pydantic>=2.5.2",
+    "pytest>=9.0.3",
+    "maturin>=1.4.0",
+]
+
+[[tool.uv.index]]
+name = "sfw"
+url = "https://sfw.security.sentry.io/pypi/simple"
+default = true
+
 [tool.maturin]
 module-name = "sentry_ophio._bindings"
 manifest-path = "bindings/Cargo.toml"
