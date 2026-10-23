@@ -20,23 +20,19 @@ tests: test
 # install-rs-dev/install-py-dev mimick sentry's naming conventions
 
 test-rust:
-	. scripts/rust-envvars && \
-		cargo test --workspace
+	cargo test --workspace
 .PHONY: test-rust
 
 lint-rust:
-	. scripts/rust-envvars && \
-		cargo clippy --workspace --all-targets --no-deps -- -D warnings
+	cargo clippy --workspace --all-targets --no-deps -- -D warnings
 .PHONY: lint-rust
 
 format-rust:
-	. scripts/rust-envvars && \
-		cargo +stable fmt --all
+	cargo +stable fmt --all
 .PHONY: format-rust
 
 format-rust-ci:
-	. scripts/rust-envvars && \
-		cargo +stable fmt --all --check
+	cargo +stable fmt --all --check
 .PHONY: format-rust-ci
 
 build:

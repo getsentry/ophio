@@ -50,8 +50,6 @@ def main(context: dict[str, str]) -> int:
         ),
     )
 
-    proc.run(("bash", "scripts/rust-envvars"))
-
     proc.run(("maturin", "develop"))
 
     print("""done!""")
