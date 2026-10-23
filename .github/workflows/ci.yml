@@ -78,7 +78,7 @@ jobs:
         run: uv pip install .
 
       - name: Run MyPy
-        run: mypy
+        run: mypy python
 
       - name: Run Python Tests
         run: pytest -v

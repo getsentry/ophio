@@ -3,15 +3,6 @@ revision = 5
 requires-python = ">=3.11"
 
 [[package]]
-name = "annotated-types"
-version = "0.8.0"
-source = { registry = "https://sfw.security.sentry.io/pypi/simple" }
-sdist = { url = "https://sfw.security.sentry.io/pypi/packages/5f/56/a8120250d128bed162cd73c76d45f6ef9991f3e068f62a8ee060afa3104a/annotated_types-0.8.0.tar.gz", hash = "sha256:13b2beaad985e05e2d6407ee4c4f35590b11f8d693a258a561055cac8f64cab7", size = 15893, upload-time = "2026-07-23T20:16:13.995Z" }
-wheels = [
-    { url = "https://sfw.security.sentry.io/pypi/packages/99/91/8acff4f5e50511b911bbccb72b8628a49c68ce14148cd9f6431094859a90/annotated_types-0.8.0-py3-none-any.whl", hash = "sha256:f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0", size = 13427, upload-time = "2026-07-23T20:16:12.938Z" },
-]
-
-[[package]]
 name = "black"
 version = "26.3.1"
 source = { registry = "https://sfw.security.sentry.io/pypi/simple" }
@@ -96,6 +87,27 @@ source = { registry = "https://sfw.security.sentry.io/pypi/simple" }
 sdist = { url = "https://sfw.security.sentry.io/pypi/packages/87/f9/c1eb8635a24e87ade2efce21e3ce8cd6b8630bb685ddc9cdaca1349b2eb5/isort-5.13.2.tar.gz", hash = "sha256:48fdfcb9face5d58a4f6dde2e72a1fb8dcaf8ab26f95ab49fab84c2ddefb0109", size = 175303, upload-time = "2023-12-13T20:37:26.124Z" }
 wheels = [
     { url = "https://sfw.security.sentry.io/pypi/packages/d1/b3/8def84f539e7d2289a02f0524b944b15d7c75dab7628bedf1c4f0992029c/isort-5.13.2-py3-none-any.whl", hash = "sha256:8ca5e72a8d85860d5a3fa69b8745237f2939afe12dbf656afbcb47fe72d947a6", size = 92310, upload-time = "2023-12-13T20:37:23.244Z" },
+]
+
+[[package]]
+name = "maturin"
+version = "1.15.0"
+source = { registry = "https://sfw.security.sentry.io/pypi/simple" }
+sdist = { url = "https://sfw.security.sentry.io/pypi/packages/b9/c8/22e5e21b2679c9bce6415ca578034ca2cc9316be0642ae21e051a2d5198c/maturin-1.15.0.tar.gz", hash = "sha256:94b26cc8e8aba61a5f2099715fe640e18c5f678e9a500408b38761263954228a", size = 385504, upload-time = "2026-08-24T12:11:22.665Z" }
+wheels = [
+    { url = "https://sfw.security.sentry.io/pypi/packages/14/69/5c01b461044eb1f45ddcce006706eb88110c793cdb11c7ae0b5e08492e94/maturin-1.15.0-py3-none-linux_armv6l.whl", hash = "sha256:6bf6dc62e22d4dcfd5a51244ff0d58975fa4979c48209fe84159617648956d82", size = 10206220, upload-time = "2026-08-24T12:10:53.327Z" },
+    { url = "https://sfw.security.sentry.io/pypi/packages/eb/1f/2b431554e11687cdb1077e0cdadcc118c53f611086b3af00c8545a67c6a5/maturin-1.15.0-py3-none-macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2.whl", hash = "sha256:cd35772633f489841132bc8e71d6fc7f842df30b9c05cd5cdf1ee1ddcb744cc7", size = 19416513, upload-time = "2026-08-24T12:10:56.126Z" },
+    { url = "https://sfw.security.sentry.io/pypi/packages/51/36/e23a21cb34a648b711036b9b2fe1d4f3f4ee24f8db54215d73f1a9a3a3ec/maturin-1.15.0-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:c40b4eae7bf5ef1f4b1af8d623fe4105016f93578fb15b764e741d08ec3b92dd", size = 10014962, upload-time = "2026-08-24T12:10:58.486Z" },
+    { url = "https://sfw.security.sentry.io/pypi/packages/8c/80/33b15cb2d8f30f12c807955e8f2fd775027692904e30ec0784744ce8cd83/maturin-1.15.0-py3-none-manylinux_2_12_i686.manylinux2010_i686.musllinux_1_1_i686.whl", hash = "sha256:7eb066372f541f8eb4909c79c5d9bd0b9e8125980bdf1ec9e8aba23c6c8d6c55", size = 10196223, upload-time = "2026-08-24T12:11:00.696Z" },
+    { url = "https://sfw.security.sentry.io/pypi/packages/fe/91/b495e19e2f5c503b540452b2039115e7b2363867e8c5ad4179eb752fa92c/maturin-1.15.0-py3-none-manylinux_2_12_x86_64.manylinux2010_x86_64.musllinux_1_1_x86_64.whl", hash = "sha256:653020a63525bb224e5ab0adf02e17a2e08bc86dbea7fc1399c9a56d7529b99e", size = 10541186, upload-time = "2026-08-24T12:11:02.857Z" },
+    { url = "https://sfw.security.sentry.io/pypi/packages/5d/2b/2abff58037188d852b124871b1f0d720e1c2bfb3d4f1b03d87c52cd66488/maturin-1.15.0-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.musllinux_1_1_aarch64.whl", hash = "sha256:0ebf9767892725083138e671c34482c660317a2f3d6a29fc0e0f34e9d8c99136", size = 10083468, upload-time = "2026-08-24T12:11:05.012Z" },
+    { url = "https://sfw.security.sentry.io/pypi/packages/3f/07/b7e9f8be99a6627849e81ac7b6694876bce8f50a92995fe17e3cf2610f0a/maturin-1.15.0-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.musllinux_1_1_armv7l.whl", hash = "sha256:7ab7eebffd7b8debca2265985de4eaeb332141276d24b9560b5ad484d4b3add1", size = 10047786, upload-time = "2026-08-24T12:11:07.042Z" },
+    { url = "https://sfw.security.sentry.io/pypi/packages/ca/ab/167e3cb7accee11b507dbe53e0e87aeccb376d44ae66284c96ee4df3a9fd/maturin-1.15.0-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.musllinux_1_1_ppc64le.whl", hash = "sha256:126e12e618b4db42f68c779a56d41f82a390145ba36ac3f621d057eb34f5ad9d", size = 13315332, upload-time = "2026-08-24T12:11:09.433Z" },
+    { url = "https://sfw.security.sentry.io/pypi/packages/14/4d/801379f646cbc6b00998e5289b0630a886be3a4ee4c75b6bc9b87478a7f1/maturin-1.15.0-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:4f9d33e6c3f9615c8caceecbbbd440f8eb25a3ddeb687077682cd5eca2e9ae15", size = 10807183, upload-time = "2026-08-24T12:11:11.73Z" },
+    { url = "https://sfw.security.sentry.io/pypi/packages/89/27/2e612e1cbd1580e9e94d4722c227b5180dca27b32b955a34b79918aa1292/maturin-1.15.0-py3-none-manylinux_2_31_riscv64.musllinux_1_1_riscv64.whl", hash = "sha256:bf29beddd0c6708f112db51d5275fc28b28b9e9c9c5faae387eaef662918b176", size = 10413274, upload-time = "2026-08-24T12:11:14.04Z" },
+    { url = "https://sfw.security.sentry.io/pypi/packages/70/d8/202a7b4d75a51f20f84ec9ce3b7345b12b822207072164e2b1c6ef665125/maturin-1.15.0-py3-none-win32.whl", hash = "sha256:da649988be98e87e009e51b1bf0d301b6a301bc0cecbdd60d40d8ba60748d1ca", size = 8928744, upload-time = "2026-08-24T12:11:16.269Z" },
+    { url = "https://sfw.security.sentry.io/pypi/packages/40/dc/4e90da594986ba78dd3bc8a5921ecdcdb11085b22b02a412caab3b225601/maturin-1.15.0-py3-none-win_amd64.whl", hash = "sha256:552c2be4afd43fe8d5c9f3ec8d4c4756d973b8dcbe94c14084390301f50243e1", size = 10335085, upload-time = "2026-08-24T12:11:18.326Z" },
+    { url = "https://sfw.security.sentry.io/pypi/packages/8b/10/15d4314edf130955edf2dc237aa393a8a7c10f2b9b57b89fa2f61f915659/maturin-1.15.0-py3-none-win_arm64.whl", hash = "sha256:c7dc0c66c78d3debdd9c5aa807e861fbcbf07f3505d34b125df74c03986b0f48", size = 9713795, upload-time = "2026-08-24T12:11:20.83Z" },
 ]
 
 [[package]]
@@ -185,57 +197,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pydantic"
-version = "2.5.2"
-source = { registry = "https://sfw.security.sentry.io/pypi/simple" }
-dependencies = [
-    { name = "annotated-types" },
-    { name = "pydantic-core" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://sfw.security.sentry.io/pypi/packages/b7/41/3c8108f79fb7da2d2b17f35744232af4ffcd9e764ebe1e3fd4b26669b325/pydantic-2.5.2.tar.gz", hash = "sha256:ff177ba64c6faf73d7afa2e8cad38fd456c0dbe01c9954e71038001cd15a6edd", size = 652158, upload-time = "2023-11-22T13:52:04.923Z" }
-wheels = [
-    { url = "https://sfw.security.sentry.io/pypi/packages/0a/2b/64066de1c4cf3d4ed623beeb3bbf3f8d0cc26661f1e7d180ec5eb66b75a5/pydantic-2.5.2-py3-none-any.whl", hash = "sha256:80c50fb8e3dcecfddae1adbcc00ec5822918490c99ab31f6cf6140ca1c1429f0", size = 381874, upload-time = "2023-11-22T13:52:00.23Z" },
-]
-
-[[package]]
-name = "pydantic-core"
-version = "2.14.5"
-source = { registry = "https://sfw.security.sentry.io/pypi/simple" }
-dependencies = [
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://sfw.security.sentry.io/pypi/packages/64/26/cffb93fe9c6b5a91c497f37fae14a4b073ecbc47fc36a9979c7aa888b245/pydantic_core-2.14.5.tar.gz", hash = "sha256:6d30226dfc816dd0fdf120cae611dd2215117e4f9b124af8c60ab9093b6e8e71", size = 360131, upload-time = "2023-11-22T13:06:43.091Z" }
-wheels = [
-    { url = "https://sfw.security.sentry.io/pypi/packages/12/00/bd693e0bf24fa016c7194ac9ca671903b0938a5aa2603f7b5779070a15a0/pydantic_core-2.14.5-cp311-cp311-macosx_10_7_x86_64.whl", hash = "sha256:4e40f2bd0d57dac3feb3a3aed50f17d83436c9e6b09b16af271b6230a2915459", size = 1858563, upload-time = "2023-11-22T13:02:47.368Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/ab/43/77d8f56eb332e84097f18fc294346d214e9f0d22fb9ec67ebed4b8e90e35/pydantic_core-2.14.5-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:ab1cdb0f14dc161ebc268c09db04d2c9e6f70027f3b42446fa11c153521c0e88", size = 1735080, upload-time = "2023-11-22T13:02:50.034Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/a4/09/90f5a03ab19e21601c6fec11fc9dea30e3228731e12b2f75f58d02430b85/pydantic_core-2.14.5-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:aae7ea3a1c5bb40c93cad361b3e869b180ac174656120c42b9fadebf685d121b", size = 1826884, upload-time = "2023-11-22T13:02:52.116Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/22/11/3f332887a888217e28b23c115c343ef89ccf5f49bbbd88d9317c707b00ac/pydantic_core-2.14.5-cp311-cp311-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:60b7607753ba62cf0739177913b858140f11b8af72f22860c28eabb2f0a61937", size = 1851648, upload-time = "2023-11-22T13:02:54.873Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/41/0a/1c0372929f3723587d66c188cbdd0c47d269447e0ac8f231f0db0f9bb03c/pydantic_core-2.14.5-cp311-cp311-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:2248485b0322c75aee7565d95ad0e16f1c67403a470d02f94da7344184be770f", size = 2003694, upload-time = "2023-11-22T13:02:57.367Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/63/e6/8887679b7f923290db2638bf80733c609aaefaae29b9fe99b83f800c1910/pydantic_core-2.14.5-cp311-cp311-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:823fcc638f67035137a5cd3f1584a4542d35a951c3cc68c6ead1df7dac825c26", size = 2984596, upload-time = "2023-11-22T13:02:59.962Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/bf/ed/ee221482b51f368884ea6453f3784eeaeb17f5b737589d39d68a89bffde7/pydantic_core-2.14.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:96581cfefa9123accc465a5fd0cc833ac4d75d55cc30b633b402e00e7ced00a6", size = 2068579, upload-time = "2023-11-22T13:03:02.174Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/75/cf/2f6e6410ae735c11df32c391948a6c601a22f40f414b5dfc24f2def8c064/pydantic_core-2.14.5-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:a33324437018bf6ba1bb0f921788788641439e0ed654b233285b9c69704c27b4", size = 1913142, upload-time = "2023-11-22T13:03:04.489Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/28/81/f5452ccf3b15aa280188fbf2b6ab39ed700623df4fcc28675f19eee9634a/pydantic_core-2.14.5-cp311-cp311-musllinux_1_1_aarch64.whl", hash = "sha256:9bd18fee0923ca10f9a3ff67d4851c9d3e22b7bc63d1eddc12f439f436f2aada", size = 2007100, upload-time = "2023-11-22T13:03:06.583Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/af/ab/79c2126e5504a3f0ecc0b1d97768594f9baa090134b0053309a2d938efaa/pydantic_core-2.14.5-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:853a2295c00f1d4429db4c0fb9475958543ee80cfd310814b5c0ef502de24dda", size = 2134232, upload-time = "2023-11-22T13:03:08.95Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/2f/eb/4b07b31c4a728b02cae14cc2a447ebd460dfdf7076fe56a074ff7e27be4f/pydantic_core-2.14.5-cp311-none-win32.whl", hash = "sha256:cb774298da62aea5c80a89bd58c40205ab4c2abf4834453b5de207d59d2e1651", size = 1730376, upload-time = "2023-11-22T13:03:10.921Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/04/a1/36cea283ded0641e8c374cdcacfdab035c102467ac5ec721b7527c8ac1cf/pydantic_core-2.14.5-cp311-none-win_amd64.whl", hash = "sha256:e87fc540c6cac7f29ede02e0f989d4233f88ad439c5cdee56f693cc9c1c78077", size = 1886861, upload-time = "2023-11-22T13:03:13.096Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/e6/7c/af522a1bce278dda0f0fdc9e64a081af51cbfedeafe44cbb6a4cc8617dad/pydantic_core-2.14.5-cp311-none-win_arm64.whl", hash = "sha256:57d52fa717ff445cb0a5ab5237db502e6be50809b43a596fb569630c665abddf", size = 1848339, upload-time = "2023-11-22T13:03:15.174Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/3a/dd/fc81e3ea962a356a705fa06965a7dbc0b204da014f238df95f1cd276bfab/pydantic_core-2.14.5-cp312-cp312-macosx_10_7_x86_64.whl", hash = "sha256:e60f112ac88db9261ad3a52032ea46388378034f3279c643499edb982536a093", size = 1851038, upload-time = "2023-11-22T13:03:17.358Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/eb/45/5eef8d36c2bf4c63e73e598fe523a0bc15069a97994481e27bef933ff423/pydantic_core-2.14.5-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:6e227c40c02fd873c2a73a98c1280c10315cbebe26734c196ef4514776120aeb", size = 1713179, upload-time = "2023-11-22T13:03:19.575Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/9e/f3/9e3d334976b5051cd18e3feef06516ead3230efb8b9af8514bc52b2795b1/pydantic_core-2.14.5-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f0cbc7fff06a90bbd875cc201f94ef0ee3929dfbd5c55a06674b60857b8b85ed", size = 1823940, upload-time = "2023-11-22T13:03:21.772Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/89/5c/e0584d534863639757e05479a3c1172550e3d3dab0c39b79e41692d1804d/pydantic_core-2.14.5-cp312-cp312-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:103ef8d5b58596a731b690112819501ba1db7a36f4ee99f7892c40da02c3e189", size = 1834525, upload-time = "2023-11-22T13:03:23.727Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/9c/52/2fc8b7e07f360993bc3d5f9ea743aac9f59287002035887c7d4f45bc6fb6/pydantic_core-2.14.5-cp312-cp312-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:c949f04ecad823f81b1ba94e7d189d9dfb81edbb94ed3f8acfce41e682e48cef", size = 1994576, upload-time = "2023-11-22T13:03:26.057Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/7e/ff/72d57544a70f4f37a06c40cfe1c4a038bc21db308e916a277faa1854a1d8/pydantic_core-2.14.5-cp312-cp312-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:c1452a1acdf914d194159439eb21e56b89aa903f2e1c65c60b9d874f9b950e5d", size = 3039433, upload-time = "2023-11-22T13:03:28.023Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/8f/af/b202d44845f89e9c997f2f351be35a76ff78304eb926b1bdb33929de40db/pydantic_core-2.14.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:cb4679d4c2b089e5ef89756bc73e1926745e995d76e11925e3e96a76d5fa51fc", size = 2063479, upload-time = "2023-11-22T13:03:30.83Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/cb/96/27421976cde52555eb20636d59743621d4fa3bba278a0e4dbb4751e3f5c1/pydantic_core-2.14.5-cp312-cp312-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:cf9d3fe53b1ee360e2421be95e62ca9b3296bf3f2fb2d3b83ca49ad3f925835e", size = 1919434, upload-time = "2023-11-22T13:03:32.827Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/90/6f/52cb83061430628878c34fdb199ccc8313a104f1390d99bff4a29b2ff6fe/pydantic_core-2.14.5-cp312-cp312-musllinux_1_1_aarch64.whl", hash = "sha256:70f4b4851dbb500129681d04cc955be2a90b2248d69273a787dda120d5cf1f69", size = 2004054, upload-time = "2023-11-22T13:03:35.273Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/10/89/bbb9bb3bd59b1cb36a87c2f6b6e3b2858fdb6ac438539f67a6c93a91ba5e/pydantic_core-2.14.5-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:59986de5710ad9613ff61dd9b02bdd2f615f1a7052304b79cc8fa2eb4e336d2d", size = 2126498, upload-time = "2023-11-22T13:03:37.237Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/8c/80/b7678c547b947cec35c136d88baf315fa6837500d9f8ce7353347f50a521/pydantic_core-2.14.5-cp312-none-win32.whl", hash = "sha256:699156034181e2ce106c89ddb4b6504c30db8caa86e0c30de47b3e0654543260", size = 1741746, upload-time = "2023-11-22T13:03:39.553Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/60/5a/3161e1a1c138407cd2037b12ecdbe29f4890ccda1c0a0be69438c7d0065d/pydantic_core-2.14.5-cp312-none-win_amd64.whl", hash = "sha256:5baab5455c7a538ac7e8bf1feec4278a66436197592a9bed538160a2e7d11e36", size = 1874829, upload-time = "2023-11-22T13:03:42.438Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/cf/b7/9bacf7f9439f785b2fe6d8199e28ad75ad25406f97f33c0186274a48a36d/pydantic_core-2.14.5-cp312-none-win_arm64.whl", hash = "sha256:e47e9a08bcc04d20975b6434cc50bf82665fbc751bcce739d04a3120428f3e27", size = 1844793, upload-time = "2023-11-22T13:03:44.466Z" },
-]
-
-[[package]]
 name = "pyflakes"
 version = "3.1.0"
 source = { registry = "https://sfw.security.sentry.io/pypi/simple" }
@@ -312,8 +273,8 @@ dev = [
     { name = "black" },
     { name = "flake8" },
     { name = "isort" },
+    { name = "maturin" },
     { name = "mypy" },
-    { name = "pydantic" },
     { name = "pytest" },
 ]
 
@@ -324,8 +285,8 @@ dev = [
     { name = "black", specifier = ">=26.3.1" },
     { name = "flake8", specifier = ">=6.1.0" },
     { name = "isort", specifier = ">=5.13.2" },
+    { name = "maturin", specifier = ">=1.8.2" },
     { name = "mypy", specifier = ">=1.8.0" },
-    { name = "pydantic", specifier = ">=2.5.2" },
     { name = "pytest", specifier = ">=9.0.3" },
 ]
 
