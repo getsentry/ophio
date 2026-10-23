@@ -13,7 +13,7 @@ devenv-sync:
 
 
 test:
-	OPHIO_SETTINGS=test pytest -vv tests -v -m "not ci_only"
+	OPHIO_SETTINGS=test .venv/bin/pytest -vv tests -v -m "not ci_only"
 
 tests: test
 
