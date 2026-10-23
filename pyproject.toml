@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "sentry_ophio"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 license = { text = "Apache-2.0" }
 classifiers = [
     "License :: OSI Approved :: Apache Software License",
@@ -38,13 +38,13 @@ python-source = "python"
 include = [{ path = "LICENSE", format = "sdist" }]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.13"
 files = ["."]
 exclude = ["^.venv/"]
 
 [tool.black]
 line-length = 100
-target-version = ['py311']
+target-version = ['py313']
 
 [tool.isort]
 profile = "black"
