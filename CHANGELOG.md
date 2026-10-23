@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.1
+
+### Bug Fixes 🐛
+
+- (proguard) Add typing for remap_class by @loewenheim in [#99](https://github.com/getsentry/ophio/pull/99)
+
 ## 1.3.0
 
 ### New Features ✨
