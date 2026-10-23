@@ -99,26 +99,6 @@ wheels = [
 ]
 
 [[package]]
-name = "maturin"
-version = "1.4.0"
-source = { registry = "https://sfw.security.sentry.io/pypi/simple" }
-sdist = { url = "https://sfw.security.sentry.io/pypi/packages/20/90/43a3aa35f037e91582ec7516a92084a71f84e89e39ef580813bed072b154/maturin-1.4.0.tar.gz", hash = "sha256:ed12e1768094a7adeafc3a74ebdb8dc2201fa64c4e7e31f14cfc70378bf93790", size = 177999, upload-time = "2023-12-02T15:35:40.989Z" }
-wheels = [
-    { url = "https://sfw.security.sentry.io/pypi/packages/82/67/6df07a52fb163da1aaaa80a9f40a955a55daf48b99875ca37a1e29c1a3ff/maturin-1.4.0-py3-none-linux_armv6l.whl", hash = "sha256:b84bee85620e1b7b662a7af71289f7f6c23df8269e42c0f76882676dfc9c733f", size = 10310784, upload-time = "2023-12-02T15:35:04.129Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/10/83/31594f87591f5f75a079f9afbcd4726667dcb0684b2c5465773b2032db22/maturin-1.4.0-py3-none-macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2.whl", hash = "sha256:076970a73da7fa3648204a584cd347b899c1ea67f8124b212bccd06728e63ed9", size = 15684345, upload-time = "2023-12-02T15:35:10.365Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/6b/fb/95fd7476bdf9565a45e14e3211e94dd87109d3a2d9dcfaaeef5e211a5cfc/maturin-1.4.0-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:f8eded83abdb30b2b6ae6d32c80b8192bdd8bcfec0ebfacee6ac02434aa499d6", size = 8000169, upload-time = "2023-12-02T15:35:13.454Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/d3/fb/e02dce3627cf14a7258b04546a8d6627cbba548e55940c4af015fe4f6a46/maturin-1.4.0-py3-none-manylinux_2_12_i686.manylinux2010_i686.musllinux_1_1_i686.whl", hash = "sha256:ff95a4494d9e57b6e74d4d7f8a9a2ee8ed29bd7f0e61855656ad959a432c0efc", size = 10808828, upload-time = "2023-12-02T15:35:15.58Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/88/c0/d4502bc09d630fb6813cfd83007875d29eb17fe92c505fe954c2fc45a6e1/maturin-1.4.0-py3-none-manylinux_2_12_x86_64.manylinux2010_x86_64.musllinux_1_1_x86_64.whl", hash = "sha256:16239a7648ef17976585353e381840c18e650d352576ed9545abca407d65e534", size = 10576165, upload-time = "2023-12-02T15:35:19.15Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/94/e8/3dfdf9b71cd0066833d94b124f3dfd3b1b06bfb1e9062e19c8db800fa9db/maturin-1.4.0-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.musllinux_1_1_aarch64.whl", hash = "sha256:77428c043d585f038f4b056c4d617e00a8027b49598ab6d065b8f6b9b9b8d144", size = 10209277, upload-time = "2023-12-02T15:35:22.26Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/d0/f4/1229a93476e10a97545f7bd3dc296435b970c1d2b05ad070036765834b73/maturin-1.4.0-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.musllinux_1_1_armv7l.whl", hash = "sha256:b4b2f006db1e92687c814576029157dcc2d97b5750fd35fd4f3aabb97e36444f", size = 10234137, upload-time = "2023-12-02T15:35:25.621Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/69/2f/e25ab3664a67ca7cbbb79062d73b3e2a9f4881b5c295516c0629e64d1cb2/maturin-1.4.0-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.musllinux_1_1_ppc64le.whl", hash = "sha256:ffe4e967080ceb83c156e73a37d3974b30cad01c376a86dc39a76a0c6bccf9b0", size = 9509094, upload-time = "2023-12-02T15:35:28.359Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/eb/1d/8ae65e5374e99bf020666f475511c1595663700c76426370e6db6d589b54/maturin-1.4.0-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:01473dc30aed8f2cee3572b3e99e3ea75bf09c84b028bf6077f7643a189699c8", size = 12084991, upload-time = "2023-12-02T15:35:31.642Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/8c/20/34f88d3287fe640e37a7bd2e92571b2355b44f1777fc2c44eba9ddd53124/maturin-1.4.0-py3-none-win32.whl", hash = "sha256:e669ba5984c15e29b8545b295ba6738974180b44f47f5d9e75569a5ce6b8add5", size = 6470551, upload-time = "2023-12-02T15:35:34.285Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/c2/c2/33d4bca7e87be6aa4720a250cb5b20f9290cfe235cc4215f9a1f15d7da30/maturin-1.4.0-py3-none-win_amd64.whl", hash = "sha256:e2c1b157397ef3721b9c2f3f24d9a5a60bd84322aac13b4dd0704a80448741b0", size = 7207047, upload-time = "2023-12-02T15:35:36.857Z" },
-    { url = "https://sfw.security.sentry.io/pypi/packages/18/a0/8a5a3a61aaf27052420c2d06ada05b4502838362d4edf5466a2b1e2b639e/maturin-1.4.0-py3-none-win_arm64.whl", hash = "sha256:2979175a7eee837dc3a6931980b37ddc86b9ced54d600856668fc074ca2530ef", size = 6359940, upload-time = "2023-12-02T15:35:39.055Z" },
-]
-
-[[package]]
 name = "mccabe"
 version = "0.7.0"
 source = { registry = "https://sfw.security.sentry.io/pypi/simple" }
@@ -332,7 +312,6 @@ dev = [
     { name = "black" },
     { name = "flake8" },
     { name = "isort" },
-    { name = "maturin" },
     { name = "mypy" },
     { name = "pydantic" },
     { name = "pytest" },
@@ -345,7 +324,6 @@ dev = [
     { name = "black", specifier = ">=26.3.1" },
     { name = "flake8", specifier = ">=6.1.0" },
     { name = "isort", specifier = ">=5.13.2" },
-    { name = "maturin", specifier = ">=1.4.0" },
     { name = "mypy", specifier = ">=1.8.0" },
     { name = "pydantic", specifier = ">=2.5.2" },
     { name = "pytest", specifier = ">=9.0.3" },
