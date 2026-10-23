@@ -1,4 +1,4 @@
-.PHONY: develop test install-python-dependencies install-py-dev build
+.PHONY: develop test install-py-dev build
 
 develop \
 install-js-dev \
